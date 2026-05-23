@@ -614,7 +614,10 @@
 
         async function createGame() {
             const playerName = localStorage.getItem('playerName') || 'Anfitrión';
-
+                window.socketClient.initializeSocket(null, playerName);
+    
+    // Espera un momento a que Socket.io se conecte
+            await new Promise(resolve => setTimeout(resolve, 500));
             // Validación: total cartas >= min jugadores + 4 centro
             const totalCartas = counters.rolestotales;
             if (totalCartas < 8) { // Mínimo 4 jugadores + 4 cartas centro

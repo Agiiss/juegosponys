@@ -1,0 +1,82 @@
+═══════════════════════════════════════════════════════════════
+  🛠️  HERRAMIENTAS DE DESARROLLO - LOBO PWA
+═══════════════════════════════════════════════════════════════
+
+Esta carpeta contiene herramientas SOLO para desarrollo y configuración.
+
+NO son necesarias para JUGAR.
+
+═══════════════════════════════════════════════════════════════
+
+📍 HERRAMIENTAS DISPONIBLES:
+
+1. viewport-coordinate-picker.html ⭐ RECOMENDADA
+   ├─ Para: Marcar botones y áreas clickeables en la imagen
+   ├─ Cómo:
+   │  1. Abre el archivo
+   │  2. Arrastra en la imagen para crear rectángulos
+   │  3. Nombra cada área (ej: "crear-partida", "unirse-partida")
+   │  4. Copia el JSON resultante
+   │  5. Las coordenadas se guardan en localStorage
+   └─ Ideal para: Configurar la posición de botones en cualquier imagen
+
+2. coordinate-picker.html
+   ├─ Para: Marcar áreas en la imagen ORIGINAL (sin escalar)
+   ├─ Menos útil que viewport-coordinate-picker
+   └─ Requiere hacer cálculos manuales después
+
+3. x-coordinate-picker.html
+   ├─ Para: Marcar SOLO coordenadas X (líneas verticales)
+   └─ Uso específico para alinear elementos en columnas
+
+4. role-generator.html
+   ├─ Para: Generar automáticamente botones de roles
+   ├─ Cómo: Pasa JSON de bres_ y las posiciones X de cont_ y bmas_
+   └─ Genera: JSON completo con todos los roles
+
+═══════════════════════════════════════════════════════════════
+
+🚀 FLUJO DE TRABAJO:
+
+Para configurar nuevos botones en una imagen:
+
+1. Abre → viewport-coordinate-picker.html
+2. Arrastra → en la imagen para marcar cada botón
+3. Nombra → cada área (crear-partida, unirse-partida, nombre, etc)
+4. Copia → el JSON que aparece
+5. Úsalo → en index.html (se carga automáticamente de localStorage)
+
+═══════════════════════════════════════════════════════════════
+
+💾 DATOS GUARDADOS:
+
+Todas las herramientas guardan datos en localStorage:
+- viewportCoordinates → Coordenadas de botones
+- xPositions → Posiciones X
+- generatedRoles → Roles generados
+
+Para RESETEAR: Abre consola (F12) y ejecuta:
+  localStorage.clear()
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+
+- NO muevas estas herramientas a las rutas de `recursos/`
+- Las rutas son relativas (buscan ../recursos/)
+- Si necesitas usar una herramienta, asegúrate de estar en `herramientas/`
+
+═══════════════════════════════════════════════════════════════
+
+❓ DUDAS:
+
+P: ¿Puedo borrar estas herramientas?
+R: Sí, una vez que tengas tus coordenadas guardadas no las necesitas.
+
+P: ¿Cómo restauro las coordenadas?
+R: Vuelve a marcar los botones con viewport-coordinate-picker.html
+
+P: ¿Qué archivo uso para jugar?
+R: index.html (está en la carpeta principal loboweb/)
+
+═══════════════════════════════════════════════════════════════

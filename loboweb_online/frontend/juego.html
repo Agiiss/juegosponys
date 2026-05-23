@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lobo - Juego">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Juego - Lobo</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="recursos/personajes/lobo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .clickable-area {
+            position: fixed;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        .clickable-area:hover {
+            background: rgba(255, 215, 0, 0.18);
+            box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Slot del jugador (carta + área clickeable) */
+        .player-slot {
+            position: fixed;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .player-slot:hover {
+            background: rgba(255, 215, 0, 0.12);
+            box-shadow: inset 0 0 12px rgba(255, 215, 0, 0.4);
+        }
+        .player-slot img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        /* Nombre del jugador */
+        .player-name {
+            position: fixed;
+            color: #ffd700;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 11;
+            text-shadow: 0 0 4px #000, 0 0 4px #000;
+            pointer-events: none;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* Carta central */
+        .card-slot {
+            position: fixed;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .card-slot:hover {
+            background: rgba(255, 215, 0, 0.12);
+            box-shadow: inset 0 0 14px rgba(255, 215, 0, 0.4);
+        }
+        .card-slot img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+
+            position: fixed;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            font-size: 11px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #00ff00;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 999;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        /* Reloj */
+        .clock {
+            position: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffd700;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 6px #000, 0 0 8px rgba(255,215,0,0.6);
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.05);
+        }
+
+        .volume-control {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-label {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .game-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ffd700;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 350px;
+            z-index: 100;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .game-panel h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .game-panel h3 {
+            color: #00ff00;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .role-item {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #ffd700;
+            color: #ccc;
+            font-size: 0.95em;
+        }
+
+        .role-count {
+            color: #ffd700;
+            font-weight: bold;
+            float: right;
+        }
+
+        .role-item.wolf {
+            border-left-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .role-item.villager {
+            border-left-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .game-status {
+            background: rgba(0, 150, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0096ff;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+
+        .status-item {
+            margin-bottom: 8px;
+        }
+
+        .status-label {
+            color: #0096ff;
+            font-weight: bold;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 12px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .start-button:hover {
+            background: #00dd00;
+            transform: scale(1.02);
+        }
+
+        .start-button:active {
+            transform: scale(0.98);
+        }
+
+        .start-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        audio { display: none; }
+
+            position: fixed;
+            left: 15px;
+            top: 60px;
+            background: rgba(0,0,0,0.88);
+            border: 1px solid #ff6b6b;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 11px;
+            z-index: 200;
+            width: 280px;
+            max-height: calc(100vh - 130px);
+            overflow-y: auto;
+        }
+            color: #ff6b6b;
+            font-size: 11px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255,107,107,0.3);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dbrow { display: flex; gap: 5px; margin-bottom: 3px; line-height: 1.45; align-items: flex-start; }
+        .dbkey { color: #888; min-width: 100px; flex-shrink: 0; }
+        .dbval          { word-break: break-all; }
+        .dbval.type-arr { color: #7ecfff; }
+        .dbval.type-obj { color: #98f5a0; }
+        .dbval.type-num { color: #ff9f7e; }
+        .dbval.type-str { color: #ffd700; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 30px;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            animation: slideUp 0.3s;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .modal-content p {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .role-assignment {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ffd700;
+        }
+
+        .role-assignment-title {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .role-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .role-badge {
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 3px;
+            border: 1px solid #ffd700;
+            color: #ffd700;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .role-badge.wolf {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .modal-buttons button:hover {
+            background: #ffed4e;
+            transform: scale(1.05);
+        }
+
+        .modal-buttons button:active {
+            transform: scale(0.95);
+        }
+
+        .modal-buttons button.cancel {
+            background: #ff6b6b;
+            color: #fff;
+        }
+
+        .modal-buttons button.cancel:hover {
+            background: #ff5252;
+        }
+
+        .scrollable-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Modal de rol: ocupa toda la altura de pantalla, imagen grande */
+        #startModal .modal-content {
+            max-height: 98vh;
+            width: 95%;
+            max-width: 420px;
+            padding: 18px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        #startModal .modal-content h2 {
+            margin-bottom: 6px;
+            font-size: 1.5em;
+        }
+        #startModal .modal-content > p {
+            margin-bottom: 6px;
+            font-size: 0.85em;
+        }
+        #startModal .scrollable-content {
+            max-height: none;
+            overflow: visible;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #startModal .modal-buttons {
+            margin-top: 10px;
+            flex-shrink: 0;
+        }
+        .rol-img-grande {
+            height: calc(100vh - 260px);
+            min-height: 180px;
+            max-height: 75vh;
+            width: auto;
+            max-width: 85vw;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 0 28px rgba(255, 215, 0, 0.45);
+            display: block;
+            margin: 0 auto 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ffed4e;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <img src="recursos/juego.png" alt="Juego" class="game-image" id="gameImage">
+    </div>
+
+    <!-- Panel de información del juego (oculto: el juego se mueve sobre la imagen) -->
+    <div class="game-panel" style="display: none;">
+        <h2>🎮 Configuración del Juego</h2>
+
+        <div class="game-status">
+            <div class="status-item">
+                <span class="status-label">👤 Jugador:</span>
+                <span id="playerName">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">👥 Jugadores:</span>
+                <span id="playerCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🎭 Roles Total:</span>
+                <span id="rolesTotal">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🐺 Lobos:</span>
+                <span id="wolvesCont">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">👨 Aldeanos:</span>
+                <span id="villagersCont">0</span>
+            </div>
+        </div>
+
+        <h3>📋 Desglose de Roles:</h3>
+        <div class="scrollable-content" id="rolesBreakdown"></div>
+
+        <button class="start-button" onclick="startGame()">🎮 Iniciar Juego</button>
+    </div>
+
+    <button class="back-button" onclick="goBack()">← Volver</button>
+
+
+    <div class="volume-control">
+        <span class="volume-label">🔊</span>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+
+    <!-- Modal de inicio de juego -->
+    <div id="startModal" class="modal">
+        <div class="modal-content">
+            <h2>🎭 Asignación de Roles</h2>
+            <p>Los roles se han generado aleatoriamente</p>
+
+            <div class="scrollable-content" id="roleAssignments"></div>
+
+            <p style="margin-top: 20px; color: #ffd700; font-weight: bold;">
+                ⚠️ Memoriza tu rol y no lo reveles a otros jugadores
+            </p>
+
+            <div class="modal-buttons">
+                <button onclick="acknowledgeRoles()">✅ Entendido</button>
+                <button class="cancel" onclick="cancelGame()">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="recursos/recursos de audio/23_musica de fondo.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+        <source src="recursos/recursos de audio/22_clicks.wav" type="audio/wav">
+    </audio>
+
+    <!-- (host-control eliminado: los turnos avanzan solos con timer) -->
+
+    <!-- Botón exportar log (siempre visible, esquina inferior derecha) -->
+    <button onclick="logExport()"
+        style="position:fixed;bottom:18px;right:18px;z-index:6000;background:rgba(0,0,0,0.7);
+               color:#888;border:1px solid #555;border-radius:8px;padding:6px 12px;
+               font-size:0.75em;cursor:pointer;">
+        📋 log.json
+    </button>
+
+    <!-- Cliente Telegram + módulo de partida + coords predeterminadas -->
+    <script src="coords-defaults.js"></script>
+    <script src="telegram.js"></script>
+    <script src="partida.js"></script>
+    <script src="log.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error:', err));
+        }
+
+        // ── Identidad del dispositivo ──────────────────────────────────────────
+        const _tablon0   = (typeof cargarTablon === 'function') ? cargarTablon() : null;
+        const _miNombre0 = sessionStorage.getItem('playerName') || '';
+        const SOY_HOST   = !!_tablon0 && _miNombre0 !== '' && _miNombre0 === (_tablon0.jugadores && _tablon0.jugadores[0]);
+        console.log(`🎮 Dispositivo: ${_miNombre0} | Host: ${SOY_HOST}`);
+
+        const audio = document.getElementById('bgMusic');
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        // Iniciar música
+        audio.volume = 0.7;
+        audio.play().catch(err => console.log('Autoplay bloqueado:', err));
+
+        // Control de volumen
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        // Función para reproducir sonido
+        function playClickSound() {
+            const clickSound = document.getElementById('clickSound');
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => console.log('Error:', err));
+        }
+
+        // ============= CARGAR DATOS DEL JUEGO =============
+
+        let gameData = {};
+
+        function loadGameData() {
+            const saved = localStorage.getItem('currentGameData');
+            if (saved) {
+                gameData = JSON.parse(saved);
+                displayGameInfo();
+            } else {
+                console.log('No hay datos de juego guardados');
+                // Usar datos de prueba si no hay datos
+                gameData = {
+                    playerName: sessionStorage.getItem('playerName') || 'Jugador',
+                    playerCount: 6,
+                    roles: {
+                        total: 6,
+                        wolves: 2,
+                        villagers: 4,
+                        breakdown: {
+                            lobo: 2,
+                            aldeano: 4
+                        }
+                    }
+                };
+            }
+        }
+
+        function displayGameInfo() {
+            document.getElementById('playerName').textContent = gameData.playerName;
+            document.getElementById('playerCount').textContent = gameData.playerCount || gameData.roles.total;
+            document.getElementById('rolesTotal').textContent = gameData.roles.total;
+            document.getElementById('wolvesCont').textContent = gameData.roles.wolves;
+            document.getElementById('villagersCont').textContent = gameData.roles.villagers;
+
+            // Mostrar desglose de roles
+            const breakdown = gameData.roles.breakdown;
+            let html = '';
+
+            // Primero lobos (solo "lobo" es del bando lobos)
+            if (breakdown.lobo) {
+                html += `<div class="role-item wolf">🐺 Lobo <span class="role-count">${breakdown.lobo}</span></div>`;
+            }
+
+            // Luego aldeanos (incluyendo Doble que es del bando aldeano)
+            for (const [role, count] of Object.entries(breakdown)) {
+                if (role !== 'lobo' && count > 0) {
+                    html += `<div class="role-item villager">👨 ${role.charAt(0).toUpperCase() + role.slice(1)} <span class="role-count">${count}</span></div>`;
+                }
+            }
+
+            document.getElementById('rolesBreakdown').innerHTML = html;
+        }
+
+        // ============= INICIAR JUEGO =============
+
+        function startGame() {
+            playClickSound();
+            generateRoleAssignments();
+            openModal('startModal');
+        }
+
+        function generateRoleAssignments() {
+            const tablon    = (typeof cargarTablon === 'function') ? cargarTablon() : null;
+            const miNombre  = sessionStorage.getItem('playerName') || '';
+            const miRol     = tablon && tablon.roles_iniciales ? tablon.roles_iniciales[miNombre] : null;
+
+            if (!miRol) {
+                document.getElementById('roleAssignments').innerHTML =
+                    '<p style="color:#f88">No se pudo cargar tu rol. Verifica conexión.</p>';
+                return;
+            }
+
+            const eLobo    = typeof ROLES_INFO !== 'undefined' && ROLES_INFO[miRol]?.bando === 'lobos';
+            const imgSrc   = `recursos/personajes/${miRol.toLowerCase()}.png`;
+
+            const html = `
+                <div style="text-align:center; width:100%;">
+                    <div style="font-size:1.05em; color:#ffd700; margin-bottom:8px; font-weight:bold;">
+                        👤 ${miNombre}
+                    </div>
+                    <img src="${imgSrc}" class="rol-img-grande"
+                         onerror="this.style.display='none'">
+                    <div class="role-badge ${eLobo ? 'wolf' : ''}"
+                         style="font-size:1.2em; margin-top:6px;">
+                        ${eLobo ? '🐺' : '🎭'} ${miRol.toUpperCase()}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('roleAssignments').innerHTML = html;
+        }
+
+        function acknowledgeRoles() {
+            playClickSound();
+            closeModal();
+            const tablon = cargarTablon();
+            if (tablon) ejecutarSecuencia(tablon);
+        }
+
+        function cancelGame() {
+            playClickSound();
+            closeModal();
+            if (confirm('¿Cancelar el juego?')) {
+                goBack();
+            }
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        function goBack() {
+            playClickSound();
+            localStorage.removeItem('currentGameData');
+            localStorage.removeItem('roleAssignments');
+            // Borrar el tablón completo (módulo partida.js)
+            if (typeof borrarTablon === 'function') borrarTablon();
+            window.location.href = 'crear-partida.html';
+        }
+
+        // Cerrar modal al clickear fuera
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // ============= RENDERIZADO ESCALADO DE LA IMAGEN DE JUEGO =============
+
+        // Fallback si no hay coords capturadas con captura-guiada.html
+        const JUEGO_FALLBACK_REF_WIDTH  = 1448;
+        const JUEGO_FALLBACK_REF_HEIGHT = 1086;
+
+        // Calcula el rectángulo VISIBLE de la imagen con object-fit: contain
+        function getDisplayedImageRect(img) {
+            const container = img.getBoundingClientRect();
+            const natW = img.naturalWidth;
+            const natH = img.naturalHeight;
+            if (!natW || !natH) return container;
+
+            const containerRatio = container.width / container.height;
+            const imageRatio = natW / natH;
+
+            let displayedW, displayedH, offsetX, offsetY;
+            if (imageRatio > containerRatio) {
+                displayedW = container.width;
+                displayedH = container.width / imageRatio;
+                offsetX = 0;
+                offsetY = (container.height - displayedH) / 2;
+            } else {
+                displayedH = container.height;
+                displayedW = container.height * imageRatio;
+                offsetX = (container.width - displayedW) / 2;
+                offsetY = 0;
+            }
+            return {
+                left: container.left + offsetX,
+                top:  container.top  + offsetY,
+                width: displayedW,
+                height: displayedH
+            };
+        }
+
+        // Carga las coords desde localStorage
+        function loadJuegoCoords() {
+            try {
+                const raw = localStorage.getItem('juegoCoordinates');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {
+                console.error('Error parsing juegoCoordinates:', e);
+            }
+            return [];
+        }
+
+        // y borde azul punteado en cada elemento (sin necesidad de hover).
+
+        function renderJuegoLayout() {
+            const img = document.getElementById('gameImage');
+            const container = document.querySelector('.game-container');
+
+            // Limpiar capa previa
+
+            const coords = loadJuegoCoords();
+            if (coords.length === 0) {
+                console.warn('⚠️ No hay juegoCoordinates en localStorage. Usa captura-guiada.html para capturarlas.');
+                return;
+            }
+
+            const imgRect = getDisplayedImageRect(img);
+            const elementRect = img.getBoundingClientRect();
+
+            console.log(`📐 Viewport: ${window.innerWidth}×${window.innerHeight}`);
+            console.log(`📦 Element img (getBoundingClientRect): ${Math.round(elementRect.width)}×${Math.round(elementRect.height)} @ (${Math.round(elementRect.left)},${Math.round(elementRect.top)})`);
+            console.log(`🌅 naturalWidth × naturalHeight: ${img.naturalWidth}×${img.naturalHeight}`);
+            console.log(`🖼️ Imagen visible (calculada): ${Math.round(imgRect.width)}×${Math.round(imgRect.height)} @ (${Math.round(imgRect.left)},${Math.round(imgRect.top)})`);
+            console.log(`📋 Elementos a renderizar: ${coords.length}`);
+
+                const dbg = document.createElement('div');
+                dbg.style.cssText = `
+                    position: fixed;
+                    left: ${imgRect.left}px;
+                    top: ${imgRect.top}px;
+                    width: ${imgRect.width}px;
+                    height: ${imgRect.height}px;
+                    border: 3px solid red;
+                    pointer-events: none;
+                    z-index: 9999;
+                    box-sizing: border-box;
+                `;
+                container.appendChild(dbg);
+
+                // También dibujar el bounding box del <img> en verde
+                const dbg2 = document.createElement('div');
+                dbg2.style.cssText = `
+                    position: fixed;
+                    left: ${elementRect.left}px;
+                    top: ${elementRect.top}px;
+                    width: ${elementRect.width}px;
+                    height: ${elementRect.height}px;
+                    border: 2px dashed lime;
+                    pointer-events: none;
+                    z-index: 9998;
+                    box-sizing: border-box;
+                `;
+                container.appendChild(dbg2);
+            }
+
+            // Nombres reales desde el TABLON_PARTIDA (módulo partida.js)
+            // tablon.jugadores es un array de strings: ["Eduardo", "Carlos", ...]
+            const tablon = (typeof cargarTablon === 'function') ? cargarTablon() : null;
+            const playerNames = {};
+            if (tablon && Array.isArray(tablon.jugadores)) {
+                tablon.jugadores.forEach((nombre, i) => {
+                    playerNames[String(i + 1)] = nombre;
+                });
+                console.log('🎴 Tablón cargado:');
+                console.log('   Jugadores:', tablon.jugadores.join(', '));
+                console.log('   Host:', tablon.jugadores[0]);
+                console.log('   Fase:', tablon.fase_actual, '| Turno:', tablon.turno_actual);
+                console.log('   roles_jugables (después de iniciar):', tablon.roles_jugables);
+                console.log('   roles_iniciales:', tablon.roles_iniciales);
+                console.log('   cartas_centro:', tablon.cartas_centro);
+                console.log('   roles_finales:', tablon.roles_finales);
+            } else {
+                Object.assign(playerNames, JSON.parse(localStorage.getItem('playerNames') || '{}'));
+            }
+
+            // Las coords se capturaron contra una versión de la imagen con dimensiones
+            // captureImage(W,H). Si el natural actual no coincide con esas dimensiones
+            // (porque la imagen se editó después), usamos los valores naturales reales.
+            // Asumimos que las coords representan posiciones en pixeles de la imagen natural.
+            const useNatural = img.naturalWidth > 0 && img.naturalHeight > 0;
+            const refCaptureW = useNatural ? img.naturalWidth  : JUEGO_FALLBACK_REF_WIDTH;
+            const refCaptureH = useNatural ? img.naturalHeight : JUEGO_FALLBACK_REF_HEIGHT;
+            console.log(`📏 Refs de captura usadas: ${refCaptureW}×${refCaptureH} (natural=${img.naturalWidth}×${img.naturalHeight})`);
+
+            coords.forEach(area => {
+                // Si la coord tiene su propio captureImageWidth/Height y coincide
+                // con el natural actual, usarlo. Si no, usar el natural directamente.
+                let capW = area.captureImageWidth  || refCaptureW;
+                let capH = area.captureImageHeight || refCaptureH;
+
+                // Si los valores guardados difieren mucho del natural, asumimos que
+                // las coords están en pixeles de la imagen natural y los corregimos.
+                const ratioMismatch = useNatural && (
+                    Math.abs(capW - img.naturalWidth)  > 20 ||
+                    Math.abs(capH - img.naturalHeight) > 20
+                );
+                if (ratioMismatch) {
+                    capW = img.naturalWidth;
+                    capH = img.naturalHeight;
+                }
+
+                const scaleX = imgRect.width  / capW;
+                const scaleY = imgRect.height / capH;
+
+                const finalX = imgRect.left + area.x * scaleX;
+                const finalY = imgRect.top  + area.y * scaleY;
+                const finalW = area.width  * scaleX;
+                const finalH = area.height * scaleY;
+
+                // Decide tipo según el nombre
+                if (area.name.startsWith('jugador_')) {
+                    createPlayerSlot(container, area, finalX, finalY, finalW, finalH);
+                } else if (area.name.startsWith('nombre_')) {
+                    const playerIdx = area.name.replace('nombre_', '');
+                    const nameText = playerNames[playerIdx] || `Jugador ${playerIdx}`;
+                    createPlayerNameLabel(container, area, finalX, finalY, finalW, finalH, nameText);
+                } else if (area.name.startsWith('carta_')) {
+                    createCardSlot(container, area, finalX, finalY, finalW, finalH);
+                } else if (area.name === 'reloj') {
+                    createClock(container, area, finalX, finalY, finalW, finalH);
+                } else {
+                    // Botones de acción: mirar_carta, copiar_rol, intercambiar_cartas, votar, revelar_identidad, etc.
+                    createActionButton(container, area, finalX, finalY, finalW, finalH);
+                }
+            });
+        }
+
+        function createPlayerSlot(container, area, x, y, w, h) {
+            const div = document.createElement('div');
+            div.className = 'player-slot';
+            div.id = 'slot_' + area.name;
+            div.style.left = x + 'px';
+            div.style.top  = y + 'px';
+            div.style.width  = w + 'px';
+            div.style.height = h + 'px';
+            div.title = area.name;
+            div.dataset.action = area.name;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                playClickSound();
+                console.log('🎴 Click en', area.name);
+                handleJuegoClick(area.name);
+            };
+            container.appendChild(div);
+        }
+
+        function createPlayerNameLabel(container, area, x, y, w, h, nameText) {
+            const div = document.createElement('div');
+            div.className = 'player-name';
+            div.id = 'label_' + area.name;
+            div.style.left = x + 'px';
+            div.style.top  = y + 'px';
+            div.style.width  = w + 'px';
+            div.style.height = h + 'px';
+            div.style.fontSize = Math.max(11, h * 0.55) + 'px';
+            div.textContent = nameText;
+            container.appendChild(div);
+        }
+
+        function createCardSlot(container, area, x, y, w, h) {
+            const div = document.createElement('div');
+            div.className = 'card-slot';
+            div.id = 'card_' + area.name;
+            div.style.left = x + 'px';
+            div.style.top  = y + 'px';
+            div.style.width  = w + 'px';
+            div.style.height = h + 'px';
+            div.title = area.name;
+            div.dataset.action = area.name;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                playClickSound();
+                console.log('🃏 Click en', area.name);
+                handleJuegoClick(area.name);
+            };
+            container.appendChild(div);
+        }
+
+        function createClock(container, area, x, y, w, h) {
+            const div = document.createElement('div');
+            div.className = 'clock';
+            div.id = 'clock_display';
+            div.style.left = x + 'px';
+            div.style.top  = y + 'px';
+            div.style.width  = w + 'px';
+            div.style.height = h + 'px';
+            div.style.fontSize = Math.max(14, h * 0.45) + 'px';
+            div.textContent = '00:60';
+            container.appendChild(div);
+        }
+
+        function createActionButton(container, area, x, y, w, h) {
+            const div = document.createElement('div');
+            div.className = 'clickable-area';
+            div.id = 'btn_' + area.name;
+            div.style.left = x + 'px';
+            div.style.top  = y + 'px';
+            div.style.width  = w + 'px';
+            div.style.height = h + 'px';
+            div.title = area.name;
+            div.dataset.action = area.name;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                playClickSound();
+                console.log('🎮 Acción:', area.name);
+                handleJuegoClick(area.name);
+            };
+            container.appendChild(div);
+        }
+
+
+        // =====================================================================
+        //  SISTEMA DE TURNOS NOCTURNOS
+        // =====================================================================
+
+        const AUDIO_BASE = 'recursos/recursos de audio/';
+
+        const TURNOS_AUDIO = {
+            'Doble':        { pre: '2_doble.mp4',           post: '3_doble.mp4' },
+            'Lobo':         { pre: '4_lobos.mp4',           post: '5_lobos.mp4' },
+            'Aprendiz':     { pre: '6_aprendiz.mp4',        post: '7_aprendiz.mp4' },
+            'Ladron':       { pre: '8_ladron.mp4',          post: '9_ladron.mp4' },
+            'Alborotadora': { pre: '10_alborotadora.mp4',   post: '11_alborotadora.mp4' },
+            'Borracho':     { pre: '12_borracho.mp4',       post: '13_borracho.mp4' },
+            'Insomia':      { pre: '14_insomia.mp4',        post: '15_insomia.mp4' },
+            'InsomiaDoble': { pre: '16_doble insomia.mp4',  post: '17_doble insomia.mp4' }
+        };
+
+        let secuenciaTurnos = [];
+        let pasoActual      = 0;
+        let clockInterval   = null;
+        let accionAudio     = null;
+
+        // Estado de selección activa
+        let seleccion = {
+            activa: false, tipo: null, maxSelecciones: 0,
+            excluir: [], seleccionados: [], accion: null, rolActuando: null
+        };
+
+        // Evita que cerrarVotacion se dispare dos veces en la misma fase
+        let _votacionCerrada = false;
+
+        // ── Construir la secuencia de pasos según roles en juego ──────────────
+        function construirSecuencia(tablon) {
+            const tiposRoles = rolesEnPartidaOrdenados(tablon);
+            const seq = [];
+
+            seq.push({ tipo: 'mostrar_cartas', duracion: 10 });
+            seq.push({ tipo: 'solo_audio',     archivo: '1_inicio.mp4' });
+
+            tiposRoles.forEach(rol => {
+                if (TURNOS_AUDIO[rol])
+                    seq.push({ tipo: 'turno', rol, ...TURNOS_AUDIO[rol], duracion: 20 });
+            });
+
+            if (tiposRoles.includes('Doble') && tiposRoles.includes('Insomia'))
+                seq.push({ tipo: 'turno', rol: 'InsomiaDoble', ...TURNOS_AUDIO['InsomiaDoble'], duracion: 20 });
+
+            seq.push({ tipo: 'solo_audio', archivo: '18_inicia votacion.mp4' });
+            seq.push({ tipo: 'votacion' });
+            return seq;
+        }
+
+        function ejecutarSecuencia(tablon) {
+            secuenciaTurnos = construirSecuencia(tablon);
+            pasoActual = 0;
+            procesarPaso(tablon);
+        }
+
+        // ── Botón "Siguiente turno" para el host ──────────────────────────────
+        function mostrarBotonSiguienteTurno(labelTurno, callback) {
+            const panel = document.getElementById('host-control');
+            const label = document.getElementById('host-turno-label');
+            const btn   = document.getElementById('btn-sig-turno');
+            if (!panel) { if (callback) callback(); return; }
+            if (label) label.textContent = labelTurno || '';
+            panel.style.display = 'block';
+            btn.onclick = () => {
+                panel.style.display = 'none';
+                logAppend('host_avanza_turno', { turno: labelTurno });
+                if (callback) callback();
+            };
+        }
+
+        function procesarPaso(_tablon) {
+            // Recargar siempre desde localStorage para incorporar cambios de clientes
+            // (intercambios de rol, marcas de acción, etc.) antes de avanzar.
+            const tablon = cargarTablon() || _tablon;
+
+            if (pasoActual >= secuenciaTurnos.length) return;
+            const paso = secuenciaTurnos[pasoActual];
+
+            if (paso.tipo === 'mostrar_cartas') {
+                mostrarCartaPropia(tablon, paso.duracion, () => { pasoActual++; procesarPaso(tablon); });
+
+            } else if (paso.tipo === 'solo_audio') {
+                reproducirAudio(paso.archivo, () => { pasoActual++; procesarPaso(tablon); });
+
+            } else if (paso.tipo === 'turno') {
+                // ── Solo el host actualiza Telegram con el nuevo turno ──
+                tablon.turno_actual = paso.rol;
+                tablon.paso_idx     = pasoActual;
+                guardar(tablon);
+                if (SOY_HOST) actualizarTelegramTablon(tablon);   // host envía, cliente no
+                logAppend('turno_inicio', { rol: paso.rol, host: SOY_HOST });
+                habilitarAccionesParaTurno(tablon, paso.rol);
+
+                reproducirAudio(paso.pre, () => {
+                    // Todos (host y clientes) esperan el mismo timer automático
+                    iniciarReloj(paso.duracion, () => {
+                        deshabilitarTodasAcciones();
+                        reproducirAudio(paso.post, () => { pasoActual++; procesarPaso(tablon); });
+                    });
+                });
+
+            } else if (paso.tipo === 'votacion') {
+                tablon.turno_actual = 'votacion';
+                guardar(tablon);
+                if (SOY_HOST) actualizarTelegramTablon(tablon);
+                logAppend('votacion_inicio', { host: SOY_HOST });
+                _votacionCerrada = false;   // reset para esta fase
+                iniciarVotacion(tablon);
+                const btnVotar = document.getElementById('btn_votar');
+                if (btnVotar) {
+                    btnVotar.style.pointerEvents = 'auto';
+                    btnVotar.style.opacity = '1';
+                }
+                // Timer 5 minutos: si se acaba sin que todos voten, el host cierra
+                iniciarReloj(300, () => {
+                    logAppend('votacion_timeout', { host: SOY_HOST });
+                    if (SOY_HOST) cerrarVotacion();
+                });
+            }
+        }
+
+        // ── Modo cliente: sigue a host vía polling de turno_actual ────────────
+        let _clienteTurnoActual = null;
+        let _clienteEnTransicion = false;
+
+        function iniciarClienteMode(tablon) {
+            logAppend('cliente_modo_inicio', { jugador: sessionStorage.getItem('playerName') });
+            secuenciaTurnos = construirSecuencia(tablon);
+            // Pasos iniciales (mostrar_cartas + 1_inicio) se reproducen igual que el host
+            // (synced por inicio_ts); luego el cliente pasa a escuchar Telegram.
+            pasoActual = 0;
+            procesarPasosIniciales(tablon);
+        }
+
+        function procesarPasosIniciales(tablon) {
+            if (pasoActual >= secuenciaTurnos.length) { iniciarPollTurnosCliente(); return; }
+            const paso = secuenciaTurnos[pasoActual];
+            if (paso.tipo === 'mostrar_cartas') {
+                mostrarCartaPropia(tablon, paso.duracion, () => { pasoActual++; procesarPasosIniciales(tablon); });
+            } else if (paso.tipo === 'solo_audio') {
+                reproducirAudio(paso.archivo, () => { pasoActual++; procesarPasosIniciales(tablon); });
+            } else {
+                // Primer turno encontrado → pasar a poll
+                iniciarPollTurnosCliente();
+            }
+        }
+
+        function iniciarPollTurnosCliente() {
+            logAppend('cliente_poll_inicio', {});
+            pollTurnosCliente();
+        }
+
+        async function pollTurnosCliente() {
+            if (_clienteEnTransicion) { setTimeout(pollTurnosCliente, 1500); return; }
+            try {
+                const remote = await getTablonFromTelegram();
+                if (remote) {
+                    logAppend('estado_recibido', { turno: remote.turno_actual, paso: remote.paso_idx });
+
+                    // ── Resultado publicado por el host ──
+                    if (remote.fase_actual === FASES.RESULTADOS) {
+                        guardar(remote);
+                        const resultado = calcularResultado(remote);
+                        mostrarResultado(resultado);
+                        return; // detener polling
+                    }
+
+                    if (remote.turno_actual && remote.turno_actual !== _clienteTurnoActual) {
+                        _clienteEnTransicion = true;
+                        _clienteTurnoActual  = remote.turno_actual;
+                        guardar(remote);
+
+                        if (remote.turno_actual === 'votacion' || remote.fase_actual === FASES.VOTACION) {
+                            _votacionCerrada = false;   // reset para esta fase
+                            reproducirAudio('18_inicia votacion.mp4', () => {
+                                iniciarVotacion(remote);
+                                const bv = document.getElementById('btn_votar');
+                                if (bv) { bv.style.pointerEvents = 'auto'; bv.style.opacity = '1'; }
+                                // Arrancar timer 5 min también en clientes
+                                iniciarReloj(300, () => {
+                                    logAppend('votacion_timeout_cliente', {});
+                                    cerrarVotacion();
+                                });
+                                _clienteEnTransicion = false;
+                            });
+                            setTimeout(pollTurnosCliente, 1800);
+                            return;
+                        }
+
+                        if (TURNOS_AUDIO[remote.turno_actual]) {
+                            const paso = secuenciaTurnos.find(p => p.rol === remote.turno_actual);
+                            const dur  = paso?.duracion || 20;
+                            deshabilitarTodasAcciones();
+                            reproducirAudio(TURNOS_AUDIO[remote.turno_actual].pre, () => {
+                                habilitarAccionesParaTurno(remote, remote.turno_actual);
+                                iniciarReloj(dur, () => {
+                                    deshabilitarTodasAcciones();
+                                    reproducirAudio(TURNOS_AUDIO[remote.turno_actual].post, () => {
+                                        _clienteEnTransicion = false;
+                                    });
+                                });
+                            });
+                        } else {
+                            _clienteEnTransicion = false;
+                        }
+                    }
+                }
+            } catch(e) { console.warn('pollTurnosCliente:', e); _clienteEnTransicion = false; }
+            setTimeout(pollTurnosCliente, 1800);
+        }
+
+        // ── Reloj ─────────────────────────────────────────────────────────────
+        function iniciarReloj(segundos, callback) {
+            const clock = document.getElementById('clock_display');
+            let restante = segundos;
+            if (clock) clock.textContent = restante;
+            clearInterval(clockInterval);
+            clockInterval = setInterval(() => {
+                restante--;
+                if (clock) clock.textContent = restante;
+                if (restante <= 0) { clearInterval(clockInterval); if (callback) callback(); }
+            }, 1000);
+        }
+
+        // ── Audio ─────────────────────────────────────────────────────────────
+        function reproducirAudio(archivo, callback) {
+            if (accionAudio) { accionAudio.pause(); accionAudio.src = ''; }
+            accionAudio = new Audio(AUDIO_BASE + archivo);
+            accionAudio.volume = document.getElementById('bgMusic').volume;
+            accionAudio.play().catch(() => {});
+            if (callback) accionAudio.onended = callback;
+        }
+
+        // ── Mostrar carta propia (turno 00) ───────────────────────────────────
+        function mostrarCartaPropia(tablon, duracion, callback) {
+            const miNombre = sessionStorage.getItem('playerName');
+            const miRol = tablon.roles_iniciales[miNombre];
+            if (!miRol) { if (callback) callback(); return; }
+            const overlay = crearOverlayCarta(miRol);
+            document.body.appendChild(overlay);
+            setTimeout(() => { overlay.remove(); if (callback) callback(); }, duracion * 1000);
+        }
+
+        function crearOverlayCarta(rol) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:5000;background:rgba(0,0,0,0.6);';
+            const img = document.createElement('img');
+            img.src = `recursos/personajes/${rol.toLowerCase()}.png`;
+            img.style.cssText = 'height:calc(100vh - 80px);max-height:90vh;width:auto;max-width:90vw;object-fit:contain;border-radius:16px;box-shadow:0 0 40px rgba(255,215,0,0.9);border:3px solid #ffd700;';
+            overlay.appendChild(img);
+            return overlay;
+        }
+
+        function revelarCartaTemporal(rol, duracion, callback) {
+            const overlay = crearOverlayCarta(rol);
+            document.body.appendChild(overlay);
+            setTimeout(() => { overlay.remove(); if (callback) callback(); }, duracion * 1000);
+        }
+
+        /**
+         * Muestra la imagen del rol dentro del slot clicado en el tablero.
+         * Si slotEl es null hace fallback a overlay pantalla completa.
+         */
+        function revelarCartaEnSlot(slotEl, rol, duracion, callback) {
+            if (!slotEl) { revelarCartaTemporal(rol, duracion, callback); return; }
+            const rect = slotEl.getBoundingClientRect();
+            const img  = document.createElement('img');
+            img.src = `recursos/personajes/${rol.toLowerCase()}.png`;
+            img.style.cssText = [
+                'position:fixed',
+                `left:${rect.left}px`,
+                `top:${rect.top}px`,
+                `width:${rect.width}px`,
+                `height:${rect.height}px`,
+                'object-fit:contain',
+                'border-radius:10px',
+                'box-shadow:0 0 30px rgba(255,215,0,0.9)',
+                'border:2px solid #ffd700',
+                'background:rgba(0,0,0,0.88)',
+                'z-index:4000',
+                'pointer-events:none'
+            ].join(';');
+            document.body.appendChild(img);
+            setTimeout(() => { img.remove(); if (callback) callback(); }, duracion * 1000);
+        }
+
+        /** Devuelve el slot del tablero que corresponde a un jugador por nombre. */
+        function slotDeJugador(tablon, nombre) {
+            const idx = tablon.jugadores.indexOf(nombre);
+            return idx >= 0 ? document.getElementById('slot_jugador_' + (idx + 1)) : null;
+        }
+
+        // ── Habilitar/deshabilitar botones ────────────────────────────────────
+        function habilitarAccionesParaTurno(tablon, rolTurno) {
+            const miNombre  = sessionStorage.getItem('playerName');
+            const miRolFinal = tablon.roles_finales[miNombre];
+            let puedeActuar = false;
+            let rolEfectivo = miRolFinal;
+
+            if (rolTurno === 'InsomiaDoble') {
+                const dc = tablon.doble_rol_copiado;
+                puedeActuar  = dc && dc.jugadorDoble === miNombre && dc.rolCopiado === 'Insomia';
+                rolEfectivo  = 'Insomia';
+            } else {
+                puedeActuar = (miRolFinal === rolTurno);
+            }
+
+            if (!puedeActuar || accionRealizada(tablon, miNombre)) return;
+
+            if (rolTurno === 'Lobo') {
+                const lobos = Object.values(tablon.roles_finales).filter(r => r === 'Lobo');
+                if (lobos.length > 1) { mostrarOtrosLobos(tablon, miNombre); return; }
+            }
+
+            const mapAccion = {
+                'Lobo':'mirar_carta', 'Aprendiz':'mirar_carta',
+                'Ladron':'intercambiar_cartas', 'Alborotadora':'intercambiar_cartas',
+                'Borracho':'intercambiar_cartas', 'Doble':'copiar_rol', 'Insomia':'revelar_identidad'
+            };
+            const accion = mapAccion[rolEfectivo];
+            if (!accion) return;
+            const btn = document.getElementById('btn_' + accion);
+            if (btn) {
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity       = '1';
+                btn.style.background    = 'rgba(255,215,0,0.3)';
+                btn.style.boxShadow     = '0 0 15px rgba(255,215,0,0.6)';
+            }
+        }
+
+        function deshabilitarTodasAcciones() {
+            ['mirar_carta','copiar_rol','intercambiar_cartas','revelar_identidad','votar'].forEach(n => {
+                const btn = document.getElementById('btn_' + n);
+                if (btn) { btn.style.pointerEvents='none'; btn.style.opacity='0.4'; btn.style.background=''; btn.style.boxShadow=''; }
+            });
+            cancelarSeleccion();
+        }
+
+        function deshabilitarBoton(nombre) {
+            const btn = document.getElementById('btn_' + nombre);
+            if (btn) { btn.style.pointerEvents='none'; btn.style.opacity='0.2'; btn.style.background=''; btn.style.boxShadow=''; }
+        }
+
+        // ── Handler central ───────────────────────────────────────────────────
+        function handleJuegoClick(actionName) {
+            const tablon   = cargarTablon();
+            const miNombre = sessionStorage.getItem('playerName');
+            if (!tablon || !miNombre) return;
+
+            if      (actionName === 'mirar_carta')        handleMirarCarta(tablon, miNombre);
+            else if (actionName === 'copiar_rol')          handleCopiarRol(tablon, miNombre);
+            else if (actionName === 'intercambiar_cartas') handleIntercambiarCartas(tablon, miNombre);
+            else if (actionName === 'revelar_identidad')   handleInsomia(tablon, miNombre);
+            else if (actionName === 'votar')               handleVotar(tablon, miNombre);
+            else if (actionName.startsWith('jugador_'))    handleSeleccionJugador(tablon, miNombre, actionName);
+            else if (actionName.startsWith('carta_'))      handleSeleccionCarta(tablon, miNombre, actionName);
+        }
+
+        // ── LOBO / APRENDIZ: mirar carta del centro ───────────────────────────
+        function handleMirarCarta(tablon, miNombre) {
+            if (accionRealizada(tablon, miNombre)) return;
+            const miRol = tablon.roles_finales[miNombre];
+            if (miRol === 'Lobo') {
+                const lobos = Object.values(tablon.roles_finales).filter(r => r === 'Lobo');
+                if (lobos.length > 1) return;
+            }
+            iniciarSeleccion({
+                tipo: 'carta_centro', maxSelecciones: 1, rolActuando: miRol,
+                accion: (idx, slotEl) => {
+                    const rol = tablon.cartas_centro[idx];
+                    marcarAccionRealizada(tablon, miNombre);
+                    deshabilitarBoton('mirar_carta');
+                    revelarCartaEnSlot(slotEl, rol, 5, null);
+                    logAppend('accion', { tipo: 'mirar_carta', rol, jugador: miNombre });
+                    actualizarTelegramTablon(tablon, true);
+                }
+            });
+        }
+
+        // ── LADRÓN / ALBOROTADORA / BORRACHO: intercambiar ────────────────────
+        function handleIntercambiarCartas(tablon, miNombre) {
+            if (accionRealizada(tablon, miNombre)) return;
+            const miRol = tablon.roles_finales[miNombre];
+
+            if (miRol === 'Ladron') {
+                iniciarSeleccion({
+                    tipo: 'jugador', maxSelecciones: 1, excluir: [miNombre], rolActuando: miRol,
+                    accion: (jugadores, slotEl) => {
+                        intercambiarRoles(tablon, miNombre, jugadores[0]);
+                        marcarAccionRealizada(tablon, miNombre);
+                        deshabilitarBoton('intercambiar_cartas');
+                        revelarCartaEnSlot(slotEl, tablon.roles_finales[miNombre], 5, null);
+                        logAppend('accion', { tipo: 'ladron', objetivo: jugadores[0], jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+
+            } else if (miRol === 'Alborotadora') {
+                iniciarSeleccion({
+                    tipo: 'jugador', maxSelecciones: 2, excluir: [miNombre], rolActuando: miRol,
+                    accion: (jugadores) => {
+                        intercambiarRoles(tablon, jugadores[0], jugadores[1]);
+                        marcarAccionRealizada(tablon, miNombre);
+                        deshabilitarBoton('intercambiar_cartas');
+                        logAppend('accion', { tipo: 'alborotadora', jugadores, jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+
+            } else if (miRol === 'Borracho') {
+                iniciarSeleccion({
+                    tipo: 'carta_centro', maxSelecciones: 1, rolActuando: miRol,
+                    accion: (idx) => {
+                        intercambiarConCentro(tablon, miNombre, idx);
+                        marcarAccionRealizada(tablon, miNombre);
+                        deshabilitarBoton('intercambiar_cartas');
+                        logAppend('accion', { tipo: 'borracho', idx, jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+            }
+        }
+
+        // ── INSOMIA: ver rol final ────────────────────────────────────────────
+        function handleInsomia(tablon, miNombre) {
+            if (accionRealizada(tablon, miNombre)) return;
+            marcarAccionRealizada(tablon, miNombre);
+            deshabilitarBoton('revelar_identidad');
+            revelarCartaEnSlot(slotDeJugador(tablon, miNombre), tablon.roles_finales[miNombre], 10, null);
+            logAppend('accion', { tipo: 'insomia', rolFinal: tablon.roles_finales[miNombre], jugador: miNombre });
+            actualizarTelegramTablon(tablon, true);
+        }
+
+        // ── DOBLE: copiar rol y actuar ────────────────────────────────────────
+        function handleCopiarRol(tablon, miNombre) {
+            if (accionRealizada(tablon, miNombre)) return;
+            iniciarSeleccion({
+                tipo: 'jugador', maxSelecciones: 1, excluir: [miNombre], rolActuando: 'Doble',
+                accion: (jugadores, slotEl) => {
+                    const objetivo   = jugadores[0];
+                    const rolCopiado = tablon.roles_finales[objetivo];
+
+                    // Solo actualizar roles_FINALES; roles_iniciales sigue siendo "Doble"
+                    tablon.roles_finales[miNombre] = rolCopiado;
+                    guardar(tablon);
+                    guardarDobleRol(tablon, miNombre, rolCopiado);
+                    marcarAccionRealizada(tablon, miNombre);
+                    deshabilitarBoton('copiar_rol');
+                    logAppend('accion', { tipo: 'doble_copia', rolCopiado, jugador: miNombre });
+                    actualizarTelegramTablon(tablon, true);
+
+                    // Mostrar la carta del jugador copiado en su slot → luego ejecutar acción
+                    revelarCartaEnSlot(slotEl, rolCopiado, 3, () => {
+                        ejecutarAccionDoble(cargarTablon(), miNombre, rolCopiado);
+                    });
+                }
+            });
+        }
+
+        function ejecutarAccionDoble(tablon, miNombre, rolCopiado) {
+            if (rolCopiado === 'Insomia') return; // actúa en turno 8
+
+            if (rolCopiado === 'Lobo') {
+                revelarCartaEnSlot(slotDeJugador(tablon, miNombre), 'Lobo', 5, null);
+                return;
+            }
+            if (rolCopiado === 'Aprendiz') {
+                // No llamar a handleMirarCarta (tiene guard accionRealizada ya marcada)
+                iniciarSeleccion({
+                    tipo: 'carta_centro', maxSelecciones: 1, rolActuando: 'Aprendiz',
+                    accion: (idx, slotEl) => {
+                        const t = cargarTablon() || tablon;
+                        const rol = t.cartas_centro[idx];
+                        revelarCartaEnSlot(slotEl, rol, 5, null);
+                        logAppend('accion', { tipo: 'doble_aprendiz', rol, jugador: miNombre });
+                        actualizarTelegramTablon(t, true);
+                    }
+                });
+                return;
+            }
+            if (rolCopiado === 'Ladron') {
+                iniciarSeleccion({
+                    tipo: 'jugador', maxSelecciones: 1, excluir: [miNombre], rolActuando: 'Ladron',
+                    accion: (jugadores, slotEl) => {
+                        intercambiarRoles(tablon, miNombre, jugadores[0]);
+                        revelarCartaEnSlot(slotEl, tablon.roles_finales[miNombre], 5, null);
+                        logAppend('accion', { tipo: 'doble_ladron', objetivo: jugadores[0], jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+                return;
+            }
+            if (rolCopiado === 'Alborotadora') {
+                iniciarSeleccion({
+                    tipo: 'jugador', maxSelecciones: 2, excluir: [miNombre], rolActuando: 'Alborotadora',
+                    accion: (jugadores) => {
+                        intercambiarRoles(tablon, jugadores[0], jugadores[1]);
+                        logAppend('accion', { tipo: 'doble_alborotadora', jugadores, jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+                return;
+            }
+            if (rolCopiado === 'Borracho') {
+                iniciarSeleccion({
+                    tipo: 'carta_centro', maxSelecciones: 1, rolActuando: 'Borracho',
+                    accion: (idx) => {
+                        intercambiarConCentro(tablon, miNombre, idx);
+                        logAppend('accion', { tipo: 'doble_borracho', idx, jugador: miNombre });
+                        actualizarTelegramTablon(tablon, true);
+                    }
+                });
+            }
+        }
+
+        // ── LOBOS MÚLTIPLES: ver entre sí ─────────────────────────────────────
+        function mostrarOtrosLobos(tablon, miNombre) {
+            const otros = Object.entries(tablon.roles_finales)
+                .filter(([n, r]) => r === 'Lobo' && n !== miNombre)
+                .map(([n]) => n);
+            if (otros.length === 0) return;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5000;background:rgba(0,0,0,0.75);';
+            const titulo = document.createElement('p');
+            titulo.textContent = '🐺 Otros lobos:';
+            titulo.style.cssText = 'color:#ff6b6b;font-size:1.4em;font-weight:bold;margin-bottom:16px;';
+            overlay.appendChild(titulo);
+            otros.forEach(nombre => {
+                const fila = document.createElement('div');
+                fila.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:12px;';
+                const img = document.createElement('img');
+                img.src = 'recursos/personajes/lobo.png';
+                img.style.cssText = 'width:60px;height:60px;border-radius:8px;border:2px solid #ff6b6b;';
+                const txt = document.createElement('span');
+                txt.textContent = nombre;
+                txt.style.cssText = 'color:#fff;font-size:1.1em;font-weight:bold;';
+                fila.appendChild(img); fila.appendChild(txt); overlay.appendChild(fila);
+            });
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 7000);
+            marcarAccionRealizada(tablon, miNombre);
+            logAppend('accion', { tipo: 'lobos_ven', otros, jugador: miNombre });
+            actualizarTelegramTablon(tablon, true);
+        }
+
+        // ── VOTAR ─────────────────────────────────────────────────────────────
+        function handleVotar(tablon, miNombre) {
+            // Guardia propia de votación: comprobar votacion{}, NO acciones_completadas
+            // (acciones_completadas se usa en la noche y bloquearía a quienes ya actuaron)
+            const tActual = cargarTablon() || tablon;
+            if (tActual.votacion && tActual.votacion[miNombre] !== undefined) return;
+
+            iniciarSeleccion({
+                tipo: 'jugador', maxSelecciones: 1, excluir: [], rolActuando: 'votacion',
+                accion: (jugadores) => {
+                    const t = cargarTablon() || tablon;
+                    votar(t, miNombre, jugadores[0]);   // votacion[miNombre] = votado
+                    deshabilitarBoton('votar');
+                    logAppend('accion', { tipo: 'voto', objetivo: jugadores[0], jugador: miNombre });
+
+                    // Ver si todos votaron (contar claves de votacion)
+                    const tFresh      = cargarTablon() || t;
+                    const totalVotos  = Object.keys(tFresh.votacion || {}).length;
+                    const todosVotaron = totalVotos >= tFresh.jugadores.length;
+
+                    if (todosVotaron) {
+                        // Cualquier tab que detecte todos votaron cierra la votación.
+                        // cerrarVotacion() solo envía a Telegram si es el host.
+                        cerrarVotacion();
+                    } else {
+                        actualizarTelegramTablon(tFresh, true);
+                    }
+                }
+            });
+        }
+
+        // ── Sistema de selección visual ───────────────────────────────────────
+        function iniciarSeleccion(config) {
+            seleccion = {
+                activa: true, tipo: config.tipo,
+                maxSelecciones: config.maxSelecciones, excluir: config.excluir || [],
+                seleccionados: [], accion: config.accion, rolActuando: config.rolActuando
+            };
+            resaltarSeleccionables();
+        }
+
+        function cancelarSeleccion() {
+            seleccion = { activa:false, tipo:null, maxSelecciones:0, excluir:[], seleccionados:[], accion:null, rolActuando:null };
+            quitarResaltados();
+        }
+
+        function resaltarSeleccionables() {
+            const tablon = cargarTablon();
+            quitarResaltados();
+            if (seleccion.tipo === 'jugador') {
+                tablon.jugadores.forEach((nombre, i) => {
+                    if (seleccion.excluir.includes(nombre)) return;
+                    const slot = document.getElementById('slot_jugador_' + (i + 1));
+                    if (slot) {
+                        slot.style.background    = 'rgba(255,215,0,0.25)';
+                        slot.style.boxShadow     = 'inset 0 0 18px rgba(255,215,0,0.5)';
+                        slot.dataset.selectable  = 'true';
+                        slot.dataset.jugadorNombre = nombre;
+                    }
+                });
+            } else if (seleccion.tipo === 'carta_centro') {
+                (tablon.cartas_centro || []).forEach((_, i) => {
+                    const slot = document.getElementById('card_carta_' + (i + 1));
+                    if (slot) {
+                        slot.style.background   = 'rgba(0,255,200,0.2)';
+                        slot.style.boxShadow    = 'inset 0 0 18px rgba(0,255,200,0.4)';
+                        slot.dataset.selectable = 'true';
+                        slot.dataset.cartaIdx   = String(i);
+                    }
+                });
+            }
+        }
+
+        function quitarResaltados() {
+            document.querySelectorAll('[data-selectable="true"]').forEach(el => {
+                el.style.background = '';
+                el.style.boxShadow  = '';
+                delete el.dataset.selectable;
+                delete el.dataset.jugadorNombre;
+                delete el.dataset.cartaIdx;
+            });
+        }
+
+        function handleSeleccionJugador(tablon, miNombre, actionName) {
+            if (!seleccion.activa || seleccion.tipo !== 'jugador') return;
+            const slot = document.getElementById('slot_' + actionName);
+            if (!slot || slot.dataset.selectable !== 'true') return;
+            const nombre = slot.dataset.jugadorNombre;
+            if (!nombre || seleccion.seleccionados.includes(nombre)) return;
+            seleccion.seleccionados.push(nombre);
+            slot.style.background = 'rgba(255,215,0,0.55)';
+            slot.style.boxShadow  = 'inset 0 0 22px rgba(255,215,0,0.9)';
+            if (seleccion.seleccionados.length >= seleccion.maxSelecciones) {
+                const resultado = [...seleccion.seleccionados];
+                const cb = seleccion.accion;
+                cancelarSeleccion();
+                if (cb) cb(resultado, slot);   // ← pasa el slot al callback
+            }
+        }
+
+        function handleSeleccionCarta(tablon, miNombre, actionName) {
+            if (!seleccion.activa || seleccion.tipo !== 'carta_centro') return;
+            const slot = document.getElementById('card_' + actionName);
+            if (!slot || slot.dataset.selectable !== 'true') return;
+            const idx = parseInt(slot.dataset.cartaIdx);
+            if (isNaN(idx)) return;
+            const cb = seleccion.accion;
+            cancelarSeleccion();
+            if (cb) cb(idx, slot);             // ← pasa el slot al callback
+        }
+
+        // ── CERRAR VOTACIÓN ───────────────────────────────────────────────────
+        // Cualquier tab puede llamarla. El que detecta "todos votaron" SIEMPRE
+        // envía a Telegram para que los demás (que pollan Telegram) vean RESULTADOS.
+        function cerrarVotacion() {
+            if (_votacionCerrada) return;           // ya cerrada en esta tab
+            const tFresh = cargarTablon();
+            if (!tFresh || tFresh.fase_actual === FASES.RESULTADOS) return;
+            _votacionCerrada = true;
+            clearInterval(clockInterval);
+            const resultado = calcularResultado(tFresh);  // pone fase=resultados y guarda
+            actualizarTelegramTablon(tFresh, true);        // siempre — cualquier tab puede ser el último en votar
+            mostrarResultado(resultado);
+        }
+
+        // ── RESULTADO FINAL ───────────────────────────────────────────────────
+
+        const RESULTADO_IMG = {
+            'aldeanos':   'recursos/resultado/victoria aldeanos.png',
+            'lobos':      'recursos/resultado/victoria lobo.png',
+            'curtidores': 'recursos/resultado/curtidor.png'
+        };
+        const RESULTADO_AUDIO = {
+            'aldeanos':   '19_aldeanos ganan.mp4',
+            'lobos':      '21_lobos ganan.mp4',
+            'curtidores': '20_gana curtidor.mp4'
+        };
+
+        function mostrarResultado(resultado) {
+            const { ganadores, eliminados } = resultado;
+            logAppend('resultado', { ganadores, eliminados });
+
+            // Overlay semitransparente (fondo visible detrás)
+            const overlay = document.createElement('div');
+            overlay.style.cssText = [
+                'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+                'display:flex', 'flex-direction:column',
+                'align-items:center', 'justify-content:center',
+                'z-index:8000', 'background:rgba(0,0,0,0.55)',
+                'pointer-events:none'
+            ].join(';');
+
+            const img = document.createElement('img');
+            img.src = RESULTADO_IMG[ganadores] || '';
+            img.style.cssText = [
+                'max-height:65vh', 'max-width:75vw',
+                'object-fit:contain', 'border-radius:18px',
+                'box-shadow:0 0 60px rgba(255,215,0,0.85)',
+                'border:3px solid #ffd700'
+            ].join(';');
+            overlay.appendChild(img);
+
+            // Etiqueta de eliminados
+            if (eliminados.length > 0) {
+                const lbl = document.createElement('div');
+                lbl.textContent = '💀 Eliminado' + (eliminados.length > 1 ? 's' : '') + ': ' + eliminados.join(', ');
+                lbl.style.cssText = 'color:#fff;font-size:1.1em;font-weight:bold;margin-top:14px;text-shadow:0 0 6px #000,0 0 6px #000;';
+                overlay.appendChild(lbl);
+            }
+
+            document.body.appendChild(overlay);
+
+            // Audio del ganador
+            if (RESULTADO_AUDIO[ganadores]) reproducirAudio(RESULTADO_AUDIO[ganadores], null);
+
+            // 5 segundos → limpiar y volver al lobby
+            setTimeout(() => {
+                overlay.remove();
+                if (typeof borrarTablon === 'function') borrarTablon();
+                window.location.href = 'espera-jugadores.html';
+            }, 5000);
+        }
+
+        // ── Telegram ──────────────────────────────────────────────────────────
+        /**
+         * Envía el tablón a Telegram.
+         * - Host: siempre puede enviar (cambios de turno + acciones propias).
+         * - Cliente: solo puede enviar si forzarEnvio=true (su acción cambió estado).
+         * - En ambos casos: guarda en log.json tras el envío.
+         */
+        function actualizarTelegramTablon(tablon, forzarEnvio = false) {
+            const miNombre = sessionStorage.getItem('playerName') || '';
+            const esHost   = miNombre !== '' && miNombre === (tablon.jugadores && tablon.jugadores[0]);
+
+            if (!esHost && !forzarEnvio) {
+                // Cliente sin acción que cambie estado: solo almacenar localmente
+                logAppend('accion_local', { turno: tablon.turno_actual, jugador: miNombre });
+                return;
+            }
+
+            if (typeof buildTablonMessage === 'function' && typeof sendOrUpdatePinned === 'function') {
+                sendOrUpdatePinned(buildTablonMessage(tablon))
+                    .then(() => logAppend('telegram_enviado', {
+                        turno: tablon.turno_actual, jugador: miNombre, host: esHost, forzado: forzarEnvio
+                    }))
+                    .catch(e => logAppend('telegram_error', { error: String(e) }));
+            }
+        }
+
+        // Ejecutar cuando la imagen se cargue + en cada resize
+        const juegoImg = document.getElementById('gameImage');
+        if (juegoImg.complete && juegoImg.naturalWidth > 0) {
+            renderJuegoLayout();
+        } else {
+            juegoImg.addEventListener('load', renderJuegoLayout);
+        }
+
+        let juegoResizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(juegoResizeTimer);
+            juegoResizeTimer = setTimeout(renderJuegoLayout, 150);
+        });
+
+        // Inicializar
+        loadGameData();
+
+
+
+        // ── Polling unificado: todos esperan inicio=1 confirmado en Telegram ────
+        // Tanto el host como los clientes arrancan solo cuando leen inicio=1
+        // desde Telegram, asegurando la mayor sincronía posible.
+        (function pollHastaIniciar() {
+            let pollTimer = null;
+            let arrancado = false;
+
+            function arrancar(tablon) {
+                if (arrancado) return;
+                arrancado = true;
+                clearTimeout(pollTimer);
+                guardar(tablon);
+                deshabilitarTodasAcciones();
+
+                const ahora      = Date.now();
+                const inicioTs   = tablon.inicio_ts || 0;
+                const msRestante = Math.max(0, inicioTs - ahora);
+                console.log(`⏱️ Sync: arranque en ${msRestante} ms (ts=${inicioTs}) | Host: ${SOY_HOST}`);
+
+                const img = document.getElementById('gameImage');
+                function go() {
+                    logClear();
+                    logAppend('partida_arranca', {
+                        jugador: sessionStorage.getItem('playerName'),
+                        esHost: SOY_HOST,
+                        inicio_ts: inicioTs
+                    });
+                    setTimeout(() => {
+                        if (SOY_HOST) {
+                            // Host: controla la secuencia y pauta los turnos
+                            ejecutarSecuencia(tablon);
+                        } else {
+                            // Cliente: reproduce pasos iniciales y luego sigue al host vía Telegram
+                            iniciarClienteMode(tablon);
+                        }
+                    }, msRestante);
+                }
+                if (img.complete && img.naturalWidth > 0) go();
+                else img.addEventListener('load', go);
+            }
+
+            async function poll() {
+                try {
+                    const remote = await getTablonFromTelegram();
+                    if (remote && remote.inicio === 1) {
+                        arrancar(remote);
+                        return;
+                    }
+                } catch (e) { console.warn('Poll inicio:', e); }
+                pollTimer = setTimeout(poll, 1000);
+            }
+
+            poll();
+            window.addEventListener('beforeunload', () => clearTimeout(pollTimer));
+        })();
+    </script>
+</body>
+</html>

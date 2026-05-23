@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewport Coordinate Picker - Lobo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .image-section {
+            position: relative;
+        }
+
+        .image-section h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 500px;
+            border: 3px solid #ffd700;
+            overflow: hidden;
+        }
+
+        #lobbyImage {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .coordinates-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #ffd700;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: 2px solid #ffd700;
+            pointer-events: none;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        .coordinates-section {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            border-radius: 5px;
+            height: fit-content;
+        }
+
+        .coordinates-section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .info-box label {
+            display: block;
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-box input {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 2px solid #ffd700;
+            color: #fff;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .info-box input:focus {
+            outline: none;
+            background: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #ffed4e;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .marked-positions {
+            margin-top: 20px;
+        }
+
+        .marked-positions h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .position-item {
+            background: #2a2a2a;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            border-left: 4px solid #00ff00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .position-name {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .position-value {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #00ff00;
+        }
+
+        .delete-btn {
+            padding: 5px 10px;
+            background: #ff6b6b;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            width: auto;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #ff5252;
+        }
+
+        .instructions {
+            background: rgba(0, 150, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0096ff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .instructions strong {
+            color: #0096ff;
+        }
+
+        .export-section {
+            background: #2a2a2a;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .export-section h3 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .export-code {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #00ff00;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #0f0;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: #00ff00;
+            color: #000;
+        }
+
+        .copy-btn:hover {
+            background: #00dd00;
+        }
+
+        .warning {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            color: #ff6b6b;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📍 Viewport Coordinate Picker</h1>
+
+        <div class="image-section">
+            <h2>🖼️ Click en la imagen para obtener coordenadas de viewport</h2>
+            <div class="instructions">
+                <strong>ℹ️ Cómo funciona:</strong><br>
+                1. Click en la imagen<br>
+                2. Se muestra la coordenada X,Y en píxeles de viewport<br>
+                3. Escribe un nombre para el área<br>
+                4. Haz click en "Guardar Coordenada"<br>
+                5. Copia el JSON y úsalo directamente en index.html
+            </div>
+
+            <div id="imageContainer">
+                <img id="lobbyImage" src="recursos/lobby.png" alt="Lobby">
+                <div class="coordinates-display" id="coordDisplay">X: <span id="xValue">0</span>, Y: <span id="yValue">0</span></div>
+            </div>
+
+            <div class="warning">
+                ⚠️ <strong>Importante:</strong> Las coordenadas que obtengas aquí son para USE DIRECTO en index.html. NO necesitas escalarlas.
+            </div>
+        </div>
+
+        <div class="coordinates-section">
+            <h2>📍 Coordenadas de Viewport</h2>
+
+            <div class="info-box">
+                <label>Nombre del área:</label>
+                <input type="text" id="areaName" placeholder="ej: crear-partida, unirse, nombre, etc">
+
+                <label>Coordenadas (se completan automáticamente):</label>
+                <input type="text" id="coordsDisplay" readonly placeholder="Click en la imagen">
+
+                <div class="button-group">
+                    <button onclick="clearMark()">Limpiar</button>
+                    <button onclick="saveCoord()">✅ Guardar</button>
+                </div>
+            </div>
+
+            <div class="marked-positions">
+                <h3>Coordenadas guardadas:</h3>
+                <div id="coordsList"></div>
+                <div class="export-section" id="exportSection" style="display: none;">
+                    <h3>📋 JSON (copia y pega en index.html):</h3>
+                    <div class="export-code" id="exportCode"></div>
+                    <button class="copy-btn" onclick="copyCode()">📋 Copiar JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageContainer = document.getElementById('imageContainer');
+        const lobbyImage = document.getElementById('lobbyImage');
+        const coordDisplay = document.getElementById('coordDisplay');
+        const xValueSpan = document.getElementById('xValue');
+        const yValueSpan = document.getElementById('yValue');
+        const areaNameInput = document.getElementById('areaName');
+        const coordsDisplayInput = document.getElementById('coordsDisplay');
+        const coordsListDiv = document.getElementById('coordsList');
+        const exportCodeDiv = document.getElementById('exportCode');
+        const exportSection = document.getElementById('exportSection');
+
+        let isDrawing = false;
+        let startX, startY;
+        let currentRect = null;
+        let coordinates = JSON.parse(localStorage.getItem('viewportCoordinates')) || [];
+
+        // Crear elemento de línea de guía
+        const guideRect = document.createElement('div');
+        guideRect.style.position = 'absolute';
+        guideRect.style.border = '2px dashed #00ff00';
+        guideRect.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+        guideRect.style.pointerEvents = 'none';
+        guideRect.style.display = 'none';
+        guideRect.style.zIndex = '10';
+        imageContainer.appendChild(guideRect);
+
+        // Mouse down para comenzar a dibujar
+        lobbyImage.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = lobbyImage.getBoundingClientRect();
+            startX = Math.round(e.clientX - rect.left);
+            startY = Math.round(e.clientY - rect.top);
+
+            guideRect.style.display = 'block';
+            guideRect.style.left = startX + 'px';
+            guideRect.style.top = startY + 'px';
+            guideRect.style.width = '0px';
+            guideRect.style.height = '0px';
+
+            coordDisplay.style.display = 'block';
+        });
+
+        // Mouse move mientras arrastra
+        document.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const rect = lobbyImage.getBoundingClientRect();
+            const currentX = Math.round(e.clientX - rect.left);
+            const currentY = Math.round(e.clientY - rect.top);
+
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+
+            guideRect.style.left = Math.min(startX, currentX) + 'px';
+            guideRect.style.top = Math.min(startY, currentY) + 'px';
+            guideRect.style.width = width + 'px';
+            guideRect.style.height = height + 'px';
+
+            xValueSpan.textContent = Math.min(startX, currentX);
+            yValueSpan.textContent = Math.min(startY, currentY);
+            coordsDisplayInput.value = `x: ${Math.min(startX, currentX)}, y: ${Math.min(startY, currentY)}, w: ${width}, h: ${height}`;
+        });
+
+        // Mouse up para terminar de dibujar
+        document.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                areaNameInput.focus();
+            }
+        });
+
+        // Mouse leave
+        lobbyImage.addEventListener('mouseleave', () => {
+            if (!isDrawing) {
+                guideRect.style.display = 'none';
+            }
+        });
+
+        function clearMark() {
+            startX = null;
+            startY = null;
+            coordsDisplayInput.value = '';
+            areaNameInput.value = '';
+            coordDisplay.style.display = 'none';
+            guideRect.style.display = 'none';
+        }
+
+        function saveCoord() {
+            const coordText = coordsDisplayInput.value;
+            if (!coordText || !areaNameInput.value.trim()) {
+                alert('Por favor, arrastra para crear un rectángulo y asigna un nombre');
+                return;
+            }
+
+            // Parsear las coordenadas
+            const parts = coordText.match(/x: (\d+), y: (\d+), w: (\d+), h: (\d+)/);
+            if (!parts) {
+                alert('Por favor, dibuja un rectángulo arrastrando en la imagen');
+                return;
+            }
+
+            const coord = {
+                name: areaNameInput.value.trim(),
+                x: parseInt(parts[1]),
+                y: parseInt(parts[2]),
+                width: parseInt(parts[3]),
+                height: parseInt(parts[4])
+            };
+
+            coordinates.push(coord);
+            localStorage.setItem('viewportCoordinates', JSON.stringify(coordinates));
+            renderCoordinates();
+            updateExport();
+            clearMark();
+        }
+
+        function renderCoordinates() {
+            coordsListDiv.innerHTML = '';
+            coordinates.forEach((coord, index) => {
+                const div = document.createElement('div');
+                div.className = 'position-item';
+                div.innerHTML = `
+                    <div>
+                        <div class="position-name">${coord.name}</div>
+                        <div class="position-value">x=${coord.x}, y=${coord.y}, w=${coord.width}, h=${coord.height}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteCoord(${index})">Eliminar</button>
+                `;
+                coordsListDiv.appendChild(div);
+            });
+        }
+
+        function deleteCoord(index) {
+            coordinates.splice(index, 1);
+            localStorage.setItem('viewportCoordinates', JSON.stringify(coordinates));
+            renderCoordinates();
+            updateExport();
+        }
+
+        function updateExport() {
+            if (coordinates.length === 0) {
+                exportSection.style.display = 'none';
+                return;
+            }
+
+            // Convertir a formato JSON para usar en index.html
+            const jsonFormat = JSON.stringify(coordinates, null, 2);
+            exportCodeDiv.textContent = jsonFormat;
+            exportSection.style.display = 'block';
+        }
+
+        function copyCode() {
+            const code = JSON.stringify(coordinates, null, 2);
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ JSON copiado al portapapeles');
+            }).catch(() => {
+                alert('Error al copiar');
+            });
+        }
+
+        // Inicializar
+        renderCoordinates();
+        updateExport();
+    </script>
+</body>
+</html>

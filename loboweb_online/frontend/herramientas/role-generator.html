@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Generator - Lobo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .section {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .section h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #ffd700;
+            color: #0f0;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-item label {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .input-item input {
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #ffd700;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 1em;
+        }
+
+        .input-item input:focus {
+            outline: none;
+            background: #333;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #ffed4e;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .preview-section {
+            background: #2a2a2a;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .preview-section h3 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .role-preview {
+            background: #1a1a1a;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #00ff00;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-family: monospace;
+            color: #0f0;
+        }
+
+        .export-code {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #ffd700;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #0f0;
+            line-height: 1.4;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .instructions {
+            background: rgba(0, 150, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0096ff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions strong {
+            color: #0096ff;
+        }
+
+        .step {
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            color: #ff6b6b;
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Generador de Roles</h1>
+
+        <div class="instructions">
+            <strong>📋 Instrucciones:</strong>
+            <div class="step">1. <strong>Pega el JSON</strong> de los botones "bres_" que ya marcaste</div>
+            <div class="step">2. <strong>Ingresa la posición X</strong> de donde están los contadores (cont_)</div>
+            <div class="step">3. <strong>Ingresa la posición X</strong> de donde están los botones + (bmas_)</div>
+            <div class="step">4. <strong>Haz click en "Generar"</strong> para crear el JSON completo</div>
+            <div class="step">5. <strong>Copia el resultado</strong> y úsalo en crear-partida.html</div>
+        </div>
+
+        <!-- Sección 1: Input del JSON de bres_ -->
+        <div class="section">
+            <h2>1️⃣ Pega el JSON de los bres_</h2>
+            <textarea id="bresInput" placeholder='[
+  {
+    "x": 180,
+    "y": 77,
+    "width": 16,
+    "height": 14,
+    "name": "bres_doble",
+    "action": "bres_doble"
+  },
+  ...
+]'></textarea>
+        </div>
+
+        <!-- Sección 2: Coordenadas X -->
+        <div class="section">
+            <h2>2️⃣ Posiciones X de las columnas</h2>
+            <p style="color: #ccc; margin-bottom: 15px;">Marca solo la coordenada X donde está cada columna en la imagen</p>
+
+            <div class="input-group">
+                <div class="input-item">
+                    <label>🎭 X de bres_ (botones rol):</label>
+                    <input type="number" id="bresX" value="180" placeholder="ej: 180">
+                </div>
+                <div class="input-item">
+                    <label>📊 X de cont_ (contador):</label>
+                    <input type="number" id="contX" value="292" placeholder="ej: 292">
+                </div>
+                <div class="input-item">
+                    <label>➕ X de bmas_ (botón +):</label>
+                    <input type="number" id="bmasX" value="322" placeholder="ej: 322">
+                </div>
+            </div>
+
+            <div class="warning">
+                💡 <strong>Tip:</strong> El ancho será el mismo que los bres_ originales (16-20px aprox)
+            </div>
+        </div>
+
+        <!-- Sección 3: Vista previa y generación -->
+        <div class="section">
+            <h2>3️⃣ Preview y Generación</h2>
+
+            <button onclick="generateRoles()">✅ Generar JSON Completo</button>
+
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h3>📋 Preview de roles generados:</h3>
+                <div id="preview"></div>
+            </div>
+
+            <div class="preview-section" id="exportSection" style="display: none;">
+                <h3>📋 JSON Completo (listo para copiar):</h3>
+                <div class="export-code" id="exportCode"></div>
+                <button onclick="copyCode()" style="margin-top: 10px; background: #00ff00; color: #000;">📋 Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateRoles() {
+            try {
+                // Parsear el JSON de entrada
+                const bresData = JSON.parse(document.getElementById('bresInput').value);
+                const bresX = parseInt(document.getElementById('bresX').value);
+                const contX = parseInt(document.getElementById('contX').value);
+                const bmasX = parseInt(document.getElementById('bmasX').value);
+
+                if (!bresData || !Array.isArray(bresData)) {
+                    alert('❌ El JSON debe ser un array válido');
+                    return;
+                }
+
+                if (isNaN(bresX) || isNaN(contX) || isNaN(bmasX)) {
+                    alert('❌ Debes ingresar las posiciones X');
+                    return;
+                }
+
+                // Generar los tres tipos de elementos
+                let allElements = [];
+                let preview = [];
+
+                bresData.forEach(bres => {
+                    // Agregar el bres original
+                    allElements.push(bres);
+
+                    // Extraer nombre base (ej: "doble" de "bres_doble")
+                    const baseName = bres.name.replace('bres_', '');
+
+                    // Generar contador (cont_)
+                    const cont = {
+                        x: contX,
+                        y: bres.y,
+                        width: bres.width,
+                        height: bres.height,
+                        name: `cont_${baseName}`,
+                        action: `cont_${baseName}`
+                    };
+                    allElements.push(cont);
+
+                    // Generar botón + (bmas_)
+                    const bmas = {
+                        x: bmasX,
+                        y: bres.y,
+                        width: bres.width,
+                        height: bres.height,
+                        name: `bmas_${baseName}`,
+                        action: `bmas_${baseName}`
+                    };
+                    allElements.push(bmas);
+
+                    // Agregar a preview
+                    preview.push(`
+                        <div class="role-preview">
+                            <strong>${baseName.toUpperCase()}</strong><br>
+                            🎭 bres_${baseName}: x=${bres.x}, y=${bres.y}<br>
+                            📊 cont_${baseName}: x=${contX}, y=${bres.y}<br>
+                            ➕ bmas_${baseName}: x=${bmasX}, y=${bres.y}
+                        </div>
+                    `);
+                });
+
+                // Mostrar preview
+                document.getElementById('preview').innerHTML = preview.join('');
+                document.getElementById('previewSection').style.display = 'block';
+
+                // Mostrar JSON exportable
+                const jsonOutput = JSON.stringify(allElements, null, 2);
+                document.getElementById('exportCode').textContent = jsonOutput;
+                document.getElementById('exportSection').style.display = 'block';
+
+                // Guardar en localStorage
+                localStorage.setItem('generatedRoles', jsonOutput);
+
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('exportCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ JSON copiado al portapapeles');
+            }).catch(() => {
+                alert('❌ Error al copiar');
+            });
+        }
+
+        // Cargar datos guardados si existen
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('generatedRoles');
+            if (saved) {
+                console.log('Datos guardados encontrados');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura Guiada - Lobo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header con instrucción */
+        .header {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            border-bottom: 3px solid #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .scene-selector {
+            display: flex;
+            gap: 5px;
+        }
+
+        .scene-selector button {
+            padding: 8px 15px;
+            background: #444;
+            color: #fff;
+            border: 2px solid #666;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .scene-selector button.active {
+            background: #ffd700;
+            color: #000;
+            border-color: #ffd700;
+        }
+
+        .current-task {
+            flex: 1;
+            background: #000;
+            border: 2px solid #00ff00;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 1.1em;
+        }
+
+        .current-task .step-num {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .current-task .target {
+            color: #ffd700;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .current-task .corner {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .actions button {
+            padding: 8px 15px;
+            background: #555;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+        .actions button.danger { background: #c0392b; }
+        .actions button.warning { background: #d35400; }
+        .actions button.success { background: #27ae60; }
+        .actions button:hover { opacity: 0.85; }
+
+        /* Layout principal */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .image-area {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Wrapper para mantener overlay e imagen perfectamente alineados */
+        .image-wrap {
+            position: relative;
+            display: inline-block;
+            line-height: 0;
+        }
+
+        #targetImage {
+            max-width: 100%;
+            max-height: 100%;
+            cursor: crosshair;
+            display: block;
+            user-select: none;
+        }
+
+        /* Capa de overlays — está dentro de image-wrap, así que ya está alineada con la imagen */
+        .overlay-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .marker {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #00ff00;
+            border: 2px solid #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px #00ff00;
+        }
+
+        .rect-preview {
+            position: absolute;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.15);
+        }
+
+        .saved-rect {
+            position: absolute;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            background: rgba(255, 215, 0, 0.08);
+        }
+
+        .saved-rect-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffd700;
+            font-size: 0.7em;
+            padding: 1px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: #2a2a2a;
+            border-left: 2px solid #ffd700;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .sidebar h3 {
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #00ff00, #ffd700);
+            height: 100%;
+            transition: width 0.3s;
+            text-align: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 0.8em;
+            line-height: 20px;
+        }
+
+        .item-list {
+            list-style: none;
+        }
+
+        .item-list li {
+            padding: 5px 8px;
+            margin-bottom: 3px;
+            background: #1a1a1a;
+            border-left: 3px solid #444;
+            font-size: 0.85em;
+            font-family: monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .item-list li:hover { background: #333; }
+        .item-list li.done { border-left-color: #00ff00; color: #00ff00; }
+        .item-list li.current { border-left-color: #00ffff; background: #003344; color: #00ffff; font-weight: bold; }
+        .item-list li.pending { border-left-color: #666; color: #aaa; }
+
+        /* Output JSON */
+        .json-output {
+            margin-top: 15px;
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+        }
+
+        .json-output.show { display: block; }
+
+        .json-output h3 { color: #00ff00; margin-bottom: 8px; }
+
+        .json-code {
+            background: #000;
+            border: 1px solid #00ff00;
+            padding: 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.75em;
+            color: #0f0;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        .copy-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .copy-btn:hover { background: #00dd00; }
+
+        /* Mensaje de ayuda */
+        .hint {
+            background: rgba(0, 150, 255, 0.1);
+            border-left: 3px solid #0096ff;
+            padding: 8px 10px;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+            color: #aaccff;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header con tarea actual y acciones -->
+    <div class="header">
+        <div class="scene-selector">
+            <button id="sceneLobby" onclick="loadScene('lobby')">🏠 Lobby</button>
+            <button id="sceneCrear" class="active" onclick="loadScene('crear')">🎮 Crear Partida</button>
+            <button id="sceneEspera" onclick="loadScene('espera')">⏳ Espera</button>
+            <button id="sceneJuego" onclick="loadScene('juego')">🎲 Juego</button>
+        </div>
+
+        <div class="current-task" id="currentTask">
+            <span class="step-num">PASO 1/58:</span>
+            Click en la <span class="corner">esquina SUPERIOR-IZQUIERDA</span> de
+            <span class="target">bres_doble</span> (botón restar de DOBLE)
+        </div>
+
+        <div class="actions">
+            <button class="warning" onclick="skipItem()">⏭️ Saltar</button>
+            <button class="warning" onclick="undoLast()">↩️ Atrás</button>
+            <button class="danger" onclick="resetAll()">🔄 Reiniciar</button>
+        </div>
+    </div>
+
+    <!-- Layout principal: imagen + sidebar -->
+    <div class="main">
+        <div class="image-area" id="imageArea">
+            <div class="image-wrap" id="imageWrap">
+                <img id="targetImage" src="../recursos/crear partida.png" alt="">
+                <div class="overlay-layer" id="overlayLayer"></div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="hint">
+                💡 Haz <strong>2 clicks</strong> por elemento:<br>
+                1) esquina superior-izquierda<br>
+                2) esquina inferior-derecha
+            </div>
+
+            <h3>📊 Progreso</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0/0</div>
+            </div>
+
+            <h3>📋 Lista</h3>
+            <ul class="item-list" id="itemList"></ul>
+
+            <div class="json-output" id="jsonOutput">
+                <h3>✅ JSON Listo</h3>
+                <div class="json-code" id="jsonCode"></div>
+                <button class="copy-btn" onclick="copyJson()">📋 Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============= DEFINICIÓN DE ESCENAS =============
+
+        const SCENES = {
+            lobby: {
+                imagePath: '../recursos/lobby.png',
+                items: [
+                    { name: 'nombre jugador', desc: 'campo de TU NOMBRE' },
+                    { name: 'Crear partida', desc: 'botón CREAR PARTIDA' },
+                    { name: 'unirse partida', desc: 'botón UNIRSE A PARTIDA' },
+                    { name: 'creditos', desc: 'botón/texto CRÉDITOS' },
+                    { name: 'salir', desc: 'botón SALIR' }
+                ]
+            },
+            crear: {
+                imagePath: '../recursos/crear partida.png',
+                items: buildCrearPartidaItems()
+            },
+            espera: {
+                imagePath: '../recursos/espera de jugadores.png',
+                items: [
+                    { name: 'boton_iniciar', desc: 'botón INICIAR (sólo el host lo verá habilitado)' }
+                ]
+            },
+            juego: {
+                imagePath: '../recursos/juego.png',
+                items: buildJuegoItems()
+            }
+        };
+
+        function buildJuegoItems() {
+            const items = [];
+            // 8 slots de jugadores: área para mostrar su carta/imagen + nombre debajo/al lado
+            for (let i = 1; i <= 8; i++) {
+                items.push({ name: `jugador_${i}`, desc: `slot del JUGADOR ${i} (carta + área clickeable)` });
+                items.push({ name: `nombre_${i}`,  desc: `área del NOMBRE del jugador ${i}` });
+            }
+            // 5 botones de acción nombrados según su texto
+            items.push({ name: 'mirar_carta',         desc: 'botón 👁️ MIRAR CARTA' });
+            items.push({ name: 'copiar_rol',          desc: 'botón 🎭 COPIAR ROL' });
+            items.push({ name: 'intercambiar_cartas', desc: 'botón 🔄 INTERCAMBIAR CARTAS' });
+            items.push({ name: 'votar',               desc: 'botón ☝️ VOTAR' });
+            items.push({ name: 'revelar_identidad',   desc: 'botón 🧙 REVELAR IDENTIDAD' });
+            // 4 cartas centrales (boca abajo)
+            for (let i = 1; i <= 4; i++) {
+                items.push({ name: `carta_${i}`, desc: `CARTA CENTRAL ${i} (clickeable, muestra imagen)` });
+            }
+            // Reloj/contador de tiempo del turno
+            items.push({ name: 'reloj', desc: '⏱️ RELOJ - contador de tiempo del turno' });
+            return items;
+        }
+
+        // Migración de nombres antiguos → nuevos (acciones)
+        const JUEGO_NAME_MIGRATION = {
+            'accion_1': 'mirar_carta',
+            'accion_2': 'copiar_rol',
+            'accion_3': 'intercambiar_cartas',
+            'accion_4': 'votar',
+            'accion_5': 'revelar_identidad'
+        };
+
+        function migrateJuegoNames(arr) {
+            if (!Array.isArray(arr)) return arr;
+            let changed = false;
+            arr.forEach(c => {
+                if (c && c.name && JUEGO_NAME_MIGRATION[c.name]) {
+                    c.name = JUEGO_NAME_MIGRATION[c.name];
+                    changed = true;
+                }
+            });
+            return changed;
+        }
+
+        function buildCrearPartidaItems() {
+            const roles = ['doble', 'lobo', 'aprendiz', 'ladron', 'alborotadora', 'borracho', 'insomia', 'aldeano', 'curtidor'];
+            const items = [];
+            roles.forEach(role => {
+                items.push({ name: `bres_${role}`,  desc: `botón RESTAR (−) de ${role.toUpperCase()}` });
+                items.push({ name: `cont_${role}`,  desc: `CONTADOR (número) de ${role.toUpperCase()}` });
+                items.push({ name: `bmas_${role}`,  desc: `botón SUMAR (+) de ${role.toUpperCase()}` });
+            });
+            items.push({ name: 'b_cancelar',     desc: 'botón CANCELAR' });
+            items.push({ name: 'b_crearpartida', desc: 'botón CREAR PARTIDA' });
+            // Contadores totales del panel RESUMEN (lado derecho de la imagen)
+            items.push({ name: 'total_roles',    desc: 'número JUGADORES TOTALES (panel resumen)' });
+            items.push({ name: 'total_lobos',    desc: 'número total de LOBOS (panel resumen)' });
+            items.push({ name: 'total_aldeanos', desc: 'número total de ALDEANOS (panel resumen)' });
+            return items;
+        }
+
+        // ============= ESTADO =============
+
+        let currentScene = 'crear';
+        let items = [];               // [{name, desc, x, y, w, h, captured: bool, skipped: bool}]
+        let currentIndex = 0;
+        let firstClick = null;        // {x, y} del primer click del elemento actual
+        let captureImageWidth = 0;
+        let captureImageHeight = 0;
+
+        // ============= ELEMENTOS DOM =============
+
+        const img = document.getElementById('targetImage');
+        const overlay = document.getElementById('overlayLayer');
+        const imageArea = document.getElementById('imageArea');
+        const taskEl = document.getElementById('currentTask');
+        const itemListEl = document.getElementById('itemList');
+        const progressFill = document.getElementById('progressFill');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const jsonCode = document.getElementById('jsonCode');
+
+        // ============= CARGAR ESCENA =============
+
+        function loadScene(sceneKey) {
+            currentScene = sceneKey;
+            const scene = SCENES[sceneKey];
+
+            document.getElementById('sceneLobby').classList.toggle('active', sceneKey === 'lobby');
+            document.getElementById('sceneCrear').classList.toggle('active', sceneKey === 'crear');
+            document.getElementById('sceneEspera').classList.toggle('active', sceneKey === 'espera');
+            document.getElementById('sceneJuego').classList.toggle('active', sceneKey === 'juego');
+
+            // Resetear items (vacíos) y captureImage para esta escena
+            items = scene.items.map(it => ({ ...it, x: 0, y: 0, w: 0, h: 0, captured: false, skipped: false }));
+            currentIndex = 0;
+            firstClick = null;
+            captureImageWidth = 0;
+            captureImageHeight = 0;
+
+            img.src = scene.imagePath;
+            img.onload = () => {
+                const rect = img.getBoundingClientRect();
+                // Solo seteamos captureImage si no había guardado previo
+                if (!captureImageWidth) {
+                    captureImageWidth = Math.round(rect.width);
+                    captureImageHeight = Math.round(rect.height);
+                }
+                // Cargar progreso previo (fusiona por nombre)
+                loadProgress(sceneKey);
+                // Si captureImage seguía vacío, usar tamaño actual
+                if (!captureImageWidth) {
+                    captureImageWidth = Math.round(rect.width);
+                    captureImageHeight = Math.round(rect.height);
+                }
+                clearOverlay();
+                redrawAll();
+                renderList();
+                updateTask();
+            };
+        }
+
+        // ============= CLICK EN LA IMAGEN =============
+
+        img.addEventListener('click', (e) => {
+            if (currentIndex >= items.length) return;
+
+            const rect = img.getBoundingClientRect();
+            const x = Math.round(e.clientX - rect.left);
+            const y = Math.round(e.clientY - rect.top);
+
+            if (!firstClick) {
+                // Primer click → marcar esquina sup-izq
+                firstClick = { x, y };
+                drawMarker(x, y);
+                updateTask();
+            } else {
+                // Segundo click → calcular rect y guardar
+                const x1 = Math.min(firstClick.x, x);
+                const y1 = Math.min(firstClick.y, y);
+                const w = Math.abs(x - firstClick.x);
+                const h = Math.abs(y - firstClick.y);
+
+                items[currentIndex].x = x1;
+                items[currentIndex].y = y1;
+                items[currentIndex].w = Math.max(w, 5);  // mínimo 5px
+                items[currentIndex].h = Math.max(h, 5);
+                items[currentIndex].captured = true;
+                items[currentIndex].skipped = false;
+
+                firstClick = null;
+                currentIndex++;
+                redrawAll();
+                renderList();
+                updateTask();
+                saveProgress();
+            }
+        });
+
+        // ============= MOSTRAR PREVIEW MIENTRAS MUEVE EL MOUSE =============
+
+        img.addEventListener('mousemove', (e) => {
+            if (!firstClick) return;
+            const rect = img.getBoundingClientRect();
+            const x = Math.round(e.clientX - rect.left);
+            const y = Math.round(e.clientY - rect.top);
+
+            // Eliminar preview anterior
+            const oldPreview = document.getElementById('previewRect');
+            if (oldPreview) oldPreview.remove();
+
+            // Calcular rect del preview
+            const x1 = Math.min(firstClick.x, x);
+            const y1 = Math.min(firstClick.y, y);
+            const w = Math.abs(x - firstClick.x);
+            const h = Math.abs(y - firstClick.y);
+
+            const preview = document.createElement('div');
+            preview.id = 'previewRect';
+            preview.className = 'rect-preview';
+            preview.style.left = x1 + 'px';
+            preview.style.top = y1 + 'px';
+            preview.style.width = w + 'px';
+            preview.style.height = h + 'px';
+            overlay.appendChild(preview);
+        });
+
+        // ============= DIBUJAR EN OVERLAY =============
+
+        function clearOverlay() {
+            overlay.innerHTML = '';
+        }
+
+        function drawMarker(x, y) {
+            const marker = document.createElement('div');
+            marker.className = 'marker';
+            marker.id = 'firstMarker';
+            marker.style.left = x + 'px';
+            marker.style.top = y + 'px';
+            overlay.appendChild(marker);
+        }
+
+        function redrawAll() {
+            clearOverlay();
+            items.forEach((it, idx) => {
+                if (it.captured) {
+                    const rect = document.createElement('div');
+                    rect.className = 'saved-rect';
+                    rect.style.left = it.x + 'px';
+                    rect.style.top = it.y + 'px';
+                    rect.style.width = it.w + 'px';
+                    rect.style.height = it.h + 'px';
+                    overlay.appendChild(rect);
+
+                    const label = document.createElement('div');
+                    label.className = 'saved-rect-label';
+                    label.textContent = it.name;
+                    label.style.left = it.x + 'px';
+                    label.style.top = (it.y - 14) + 'px';
+                    overlay.appendChild(label);
+                }
+            });
+        }
+
+        // ============= ACTUALIZAR TAREA ACTUAL =============
+
+        function updateTask() {
+            if (currentIndex >= items.length) {
+                taskEl.innerHTML = `<span class="step-num">✅ COMPLETADO</span> — Todos los elementos capturados. Copia el JSON →`;
+                showJson();
+                return;
+            }
+
+            jsonOutput.classList.remove('show');
+            const it = items[currentIndex];
+            const corner = firstClick
+                ? 'esquina INFERIOR-DERECHA'
+                : 'esquina SUPERIOR-IZQUIERDA';
+
+            const total = items.length;
+            taskEl.innerHTML = `
+                <span class="step-num">PASO ${currentIndex + 1}/${total}:</span>
+                Click en la <span class="corner">${corner}</span> de
+                <span class="target">${it.name}</span> (${it.desc})
+            `;
+
+            // Actualizar barra de progreso
+            const done = items.filter(i => i.captured).length;
+            const pct = total > 0 ? (done / total * 100) : 0;
+            progressFill.style.width = pct + '%';
+            progressFill.textContent = `${done}/${total}`;
+        }
+
+        function renderList() {
+            itemListEl.innerHTML = '';
+            items.forEach((it, idx) => {
+                const li = document.createElement('li');
+                li.textContent = (it.captured ? '✓ ' : it.skipped ? '⏭ ' : '○ ') + it.name;
+                if (idx === currentIndex) li.classList.add('current');
+                else if (it.captured) li.classList.add('done');
+                else li.classList.add('pending');
+
+                li.onclick = () => {
+                    currentIndex = idx;
+                    firstClick = null;
+                    updateTask();
+                    renderList();
+                };
+                itemListEl.appendChild(li);
+            });
+        }
+
+        // ============= ACCIONES =============
+
+        function skipItem() {
+            if (currentIndex >= items.length) return;
+            items[currentIndex].skipped = true;
+            firstClick = null;
+            currentIndex++;
+            updateTask();
+            renderList();
+            saveProgress();
+        }
+
+        function undoLast() {
+            // Si estamos en medio de capturar (primer click hecho), cancelarlo
+            if (firstClick) {
+                firstClick = null;
+                redrawAll();
+                updateTask();
+                return;
+            }
+            // Si no, retroceder al item anterior
+            if (currentIndex > 0) {
+                currentIndex--;
+                items[currentIndex].captured = false;
+                items[currentIndex].skipped = false;
+                redrawAll();
+                renderList();
+                updateTask();
+            }
+        }
+
+        function resetAll() {
+            if (!confirm('¿Borrar TODAS las capturas y empezar de nuevo?')) return;
+            items.forEach(it => {
+                it.captured = false;
+                it.skipped = false;
+                it.x = 0; it.y = 0; it.w = 0; it.h = 0;
+            });
+            currentIndex = 0;
+            firstClick = null;
+            clearOverlay();
+            renderList();
+            updateTask();
+            localStorage.removeItem('capturaGuiada_' + currentScene);
+        }
+
+        // ============= GUARDAR / CARGAR PROGRESO =============
+
+        function saveProgress() {
+            const data = {
+                scene: currentScene,
+                captureImageWidth,
+                captureImageHeight,
+                items: items
+            };
+            localStorage.setItem('capturaGuiada_' + currentScene, JSON.stringify(data));
+        }
+
+        function loadProgress(sceneKey) {
+            // Estrategia: fusionar por NOMBRE (no por índice).
+            // Así si se añaden items nuevos a la lista, los existentes se preservan.
+            // Primero busca capturas en 2 fuentes:
+            //   1) capturaGuiada_<scene>  → progreso completo de la herramienta
+            //   2) viewportCoordinates / crearPartidaCoordinates → JSON final exportado
+            let saved = null;
+            try {
+                const raw = localStorage.getItem('capturaGuiada_' + sceneKey);
+                if (raw) saved = JSON.parse(raw);
+            } catch (e) {}
+
+            // Fuente alternativa: el JSON final que ya se exportó
+            let alternateCoords = null;
+            try {
+                const altKeyByScene = {
+                    lobby:  'viewportCoordinates',
+                    crear:  'crearPartidaCoordinates',
+                    espera: 'esperaCoordinates',
+                    juego:  'juegoCoordinates'
+                };
+                const altKey = altKeyByScene[sceneKey];
+                if (altKey) {
+                    const altRaw = localStorage.getItem(altKey);
+                    if (altRaw) alternateCoords = JSON.parse(altRaw);
+                }
+            } catch (e) {}
+
+            let restored = 0;
+
+            // Aplicar capturas guardadas (por nombre)
+            const merge = (savedItem) => {
+                const idx = items.findIndex(i => i.name === savedItem.name);
+                if (idx >= 0 && (savedItem.captured || savedItem.x !== undefined)) {
+                    items[idx].x = savedItem.x ?? 0;
+                    items[idx].y = savedItem.y ?? 0;
+                    items[idx].w = savedItem.w ?? savedItem.width  ?? 0;
+                    items[idx].h = savedItem.h ?? savedItem.height ?? 0;
+                    items[idx].captured = savedItem.captured ?? true;
+                    items[idx].skipped  = savedItem.skipped  ?? false;
+                    if (items[idx].captured) restored++;
+                }
+            };
+
+            // Aplicar migraciones de nombres viejos → nuevos para juego
+            if (sceneKey === 'juego') {
+                if (saved && saved.items)            migrateJuegoNames(saved.items);
+                if (alternateCoords)                 migrateJuegoNames(alternateCoords);
+            }
+
+            if (saved && Array.isArray(saved.items)) {
+                saved.items.forEach(merge);
+                if (saved.captureImageWidth)  captureImageWidth  = saved.captureImageWidth;
+                if (saved.captureImageHeight) captureImageHeight = saved.captureImageHeight;
+            }
+            if (alternateCoords && Array.isArray(alternateCoords)) {
+                alternateCoords.forEach(c => {
+                    merge({ ...c, captured: true });
+                    if (c.captureImageWidth)  captureImageWidth  = c.captureImageWidth;
+                    if (c.captureImageHeight) captureImageHeight = c.captureImageHeight;
+                });
+                // Re-guardar el JSON exportado con los nombres nuevos
+                if (sceneKey === 'juego') {
+                    localStorage.setItem('juegoCoordinates', JSON.stringify(alternateCoords));
+                }
+            }
+
+            // Posicionar en el primer item que falte capturar
+            currentIndex = items.findIndex(i => !i.captured && !i.skipped);
+            if (currentIndex === -1) currentIndex = items.length;
+
+            if (restored > 0) {
+                console.log(`✅ Restauradas ${restored} capturas previas`);
+            }
+            return restored > 0;
+        }
+
+        // ============= GENERAR JSON =============
+
+        function showJson() {
+            const captured = items.filter(i => i.captured);
+            // Formato: { captureImageWidth, captureImageHeight, areas: [...] }
+            const output = captured.map(it => ({
+                name: it.name,
+                x: it.x,
+                y: it.y,
+                width: it.w,
+                height: it.h,
+                captureImageWidth: captureImageWidth,
+                captureImageHeight: captureImageHeight
+            }));
+
+            const json = JSON.stringify(output, null, 2);
+            jsonCode.textContent = json;
+            jsonOutput.classList.add('show');
+
+            // Guardar también en la key que usa cada página
+            const keyByScene = {
+                lobby:  'viewportCoordinates',
+                crear:  'crearPartidaCoordinates',
+                espera: 'esperaCoordinates',
+                juego:  'juegoCoordinates'
+            };
+            if (keyByScene[currentScene]) {
+                localStorage.setItem(keyByScene[currentScene], JSON.stringify(output));
+            }
+        }
+
+        function copyJson() {
+            const pageByScene = {
+                lobby:  'index.html',
+                crear:  'crear-partida.html',
+                espera: 'espera-jugadores.html',
+                juego:  'juego.html'
+            };
+            navigator.clipboard.writeText(jsonCode.textContent)
+                .then(() => alert('✅ JSON copiado.\n\nGuardado automáticamente en localStorage para que ' + (pageByScene[currentScene] || 'la página') + ' lo use.'))
+                .catch(() => alert('Error al copiar al portapapeles'));
+        }
+
+        // ============= ATAJOS DE TECLADO =============
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { undoLast(); e.preventDefault(); }
+            if (e.key === 's' || e.key === 'S') { skipItem(); e.preventDefault(); }
+            if (e.key === 'Enter' && currentIndex >= items.length) { copyJson(); e.preventDefault(); }
+        });
+
+        // ============= INICIO =============
+
+        loadScene('crear');
+    </script>
+</body>
+</html>

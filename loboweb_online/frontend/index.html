@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lobo - Juego de Deducción">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Lobo - Lobby</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="recursos/personajes/lobo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        .lobby-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lobby-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Input de nombre - invisible pero texto visible */
+        .player-name-input {
+            position: fixed;
+            background: transparent;
+            border: none;
+            color: #ffd700;
+            font-weight: bold;
+            text-align: center;
+            z-index: 20;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            caret-color: #ffd700;
+            /* Posicionamiento y tamaño se establecen por JavaScript */
+        }
+
+        .player-name-input::placeholder {
+            color: transparent;
+        }
+
+        .player-name-input:focus {
+            outline: none;
+        }
+
+        .clickable-area {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        .clickable-area:hover {
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .clickable-area:active {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.05);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .volume-control {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-label {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        audio {
+            display: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 30px;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .modal-content p {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffd700;
+            color: #fff;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: Arial, sans-serif;
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .modal-content input::placeholder {
+            color: #888;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .modal-buttons button:hover {
+            background: #ffed4e;
+            transform: scale(1.05);
+        }
+
+        .modal-buttons button:active {
+            transform: scale(0.95);
+        }
+
+        .credits-text {
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #ccc;
+        }
+
+        .credits-text h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .credits-text p {
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        /* Toast de estado para el flujo de unirse */
+        #joinStatus {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.92);
+            color: #ffd700;
+            padding: 22px 32px;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+            text-align: center;
+            max-width: 80%;
+            min-width: 260px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            pointer-events: none;
+        }
+        #joinStatus.error {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="lobby-container">
+        <img src="recursos/lobby.png" alt="Lobby" class="lobby-image">
+
+        <!-- Input para nombre del jugador (posicionado por JavaScript) -->
+        <input
+            type="text"
+            class="player-name-input"
+            id="playerNameInput"
+            placeholder="TU NOMBRE"
+            maxlength="20"
+        >
+
+        <!-- Áreas clickeables (se posicionan dinámicamente con JavaScript) -->
+        <div id="clickable-areas-container"></div>
+    </div>
+
+    <!-- Toast de estado: unirse a partida -->
+    <div id="joinStatus"></div>
+
+    <!-- Modal de créditos -->
+    <div id="creditsModal" class="modal">
+        <div class="modal-content">
+            <h2>🎬 Créditos</h2>
+            <div class="credits-text">
+                <h3>Juego del Lobo</h3>
+                <p><strong>Versión Web:</strong> 1.0</p>
+                <p><strong>Desarrollado por:</strong> Eduardo</p>
+                <p><strong>Música:</strong> 23_musica de fondo</p>
+                <hr style="border: 1px solid #ffd700; margin: 15px 0;">
+                <p style="font-size: 0.9em; color: #999;">Un juego de deducción y estrategia para 4-12 jugadores</p>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="volume-control">
+        <span class="volume-label">🔊</span>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+
+    <div class="controls">
+        <button id="toggleMusic" class="btn playing">Música</button>
+    </div>
+
+
+    <audio id="bgMusic" loop>
+        <source src="recursos/recursos de audio/23_musica de fondo.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+        <source src="recursos/recursos de audio/22_clicks.wav" type="audio/wav">
+    </audio>
+
+    <!-- Socket.io client + módulo de partida + coords predeterminadas -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="coords-defaults.js"></script>
+    <script src="socket-client.js"></script>
+    <script src="partida.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error al registrar Service Worker:', err));
+        }
+
+        const audio = document.getElementById('bgMusic');
+        const toggleBtn = document.getElementById('toggleMusic');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const playerNameInput = document.getElementById('playerNameInput');
+
+        // Iniciar música automáticamente
+        audio.volume = 0.7;
+        audio.play().catch(err => console.log('Autoplay bloqueado:', err));
+
+        // ============= USAR COORDENADAS DE VIEWPORT DIRECTAMENTE =============
+
+
+        // ============= FUNCIÓN PRINCIPAL: Cargar y escalar coordenadas =============
+        function setupClickableAreas() {
+            // Limpiar áreas anteriores (en caso de resize)
+            const container = document.getElementById('clickable-areas-container');
+            container.innerHTML = '';
+
+
+
+            // Cargar coordenadas guardadas del viewport-coordinate-picker
+            let viewportCoords = JSON.parse(localStorage.getItem('viewportCoordinates'));
+
+            // Si no hay coordenadas guardadas, usar las predeterminadas
+            if (!viewportCoords) {
+                viewportCoords = [
+                    { "name": "Crear partida", "x": 133, "y": 214, "width": 108, "height": 83, "captureImageWidth": 500, "captureImageHeight": 375 },
+                    { "name": "unirse partida", "x": 251, "y": 213, "width": 112, "height": 88, "captureImageWidth": 500, "captureImageHeight": 375 },
+                    { "name": "nombre jugador", "x": 156, "y": 159, "width": 180, "height": 26, "captureImageWidth": 500, "captureImageHeight": 375 },
+                    { "name": "creditos", "x": 212, "y": 320, "width": 65, "height": 16, "captureImageWidth": 500, "captureImageHeight": 375 },
+                    { "name": "salir", "x": 456, "y": 341, "width": 80, "height": 30, "captureImageWidth": 500, "captureImageHeight": 375 }
+                ];
+                localStorage.setItem('viewportCoordinates', JSON.stringify(viewportCoords));
+            }
+
+            // MIGRACIÓN: si las coords viejas no tienen captureImageWidth,
+            // asumimos que vienen del picker antiguo (max-width 500px)
+            let migrated = false;
+            viewportCoords.forEach(c => {
+                if (!c.captureImageWidth) {
+                    c.captureImageWidth = 500;
+                    c.captureImageHeight = 375;
+                    migrated = true;
+                }
+            });
+            if (migrated) {
+                localStorage.setItem('viewportCoordinates', JSON.stringify(viewportCoords));
+            }
+
+            if (!viewportCoords || viewportCoords.length === 0) {
+                return;
+            }
+
+            // Calcular el área REAL visible de la imagen (con object-fit: contain)
+            const lobbyImage = document.querySelector('.lobby-image');
+            const imgRect = getDisplayedImageRect(lobbyImage);
+
+
+
+            viewportCoords.forEach(coord => {
+                // Factor de escala: tamaño actual / tamaño de captura
+                const captureW = coord.captureImageWidth || imgRect.width;
+                const captureH = coord.captureImageHeight || imgRect.height;
+                const scaleX = imgRect.width / captureW;
+                const scaleY = imgRect.height / captureH;
+
+                // Coordenadas escaladas + offset de la imagen en el viewport
+                const finalX = imgRect.left + coord.x * scaleX;
+                const finalY = imgRect.top + coord.y * scaleY;
+                const finalW = coord.width * scaleX;
+                const finalH = coord.height * scaleY;
+
+
+                // Crear área clickeable (position: fixed = relativa al viewport)
+                const div = document.createElement('div');
+                div.className = 'clickable-area';
+                div.style.position = 'fixed';
+                div.style.left = finalX + 'px';
+                div.style.top = finalY + 'px';
+                div.style.width = finalW + 'px';
+                div.style.height = finalH + 'px';
+                div.title = coord.name;
+
+                // Asignar acción según el nombre
+                const nameLower = coord.name.toLowerCase();
+                if (nameLower.includes('crear')) {
+                    div.dataset.action = 'crear-partida';
+                } else if (nameLower.includes('unirse')) {
+                    div.dataset.action = 'unirse-partida';
+                } else if (nameLower.includes('credito')) {
+                    div.dataset.action = 'creditos';
+                } else if (nameLower.includes('nombre')) {
+                    div.dataset.action = 'nombre-jugador';
+                } else if (nameLower.includes('salir')) {
+                    div.dataset.action = 'salir';
+                }
+
+                // Agregar listener de click
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playClickSound();
+                    if (div.dataset.action) {
+                        handleAreaClick(div.dataset.action);
+                    }
+                });
+
+                container.appendChild(div);
+
+                // Posicionar el input del nombre si es ese
+                if (nameLower.includes('nombre')) {
+                    playerNameInput.style.left = finalX + 'px';
+                    playerNameInput.style.top = finalY + 'px';
+                    playerNameInput.style.width = finalW + 'px';
+                    playerNameInput.style.height = finalH + 'px';
+                    playerNameInput.style.fontSize = Math.max(12, finalH * 0.6) + 'px';
+                    playerNameInput.style.lineHeight = finalH + 'px';
+                }
+            });
+        }
+
+        // Calcula el rectángulo VISIBLE de la imagen con object-fit: contain
+        function getDisplayedImageRect(img) {
+            const container = img.getBoundingClientRect();
+            const natW = img.naturalWidth;
+            const natH = img.naturalHeight;
+            if (!natW || !natH) {
+                return container; // fallback si aún no se cargó
+            }
+            const containerRatio = container.width / container.height;
+            const imageRatio = natW / natH;
+
+            let displayedW, displayedH, offsetX, offsetY;
+            if (imageRatio > containerRatio) {
+                // La imagen es más ancha → letterbox arriba y abajo
+                displayedW = container.width;
+                displayedH = container.width / imageRatio;
+                offsetX = 0;
+                offsetY = (container.height - displayedH) / 2;
+            } else {
+                // La imagen es más alta → letterbox izquierda y derecha
+                displayedH = container.height;
+                displayedW = container.height * imageRatio;
+                offsetX = (container.width - displayedW) / 2;
+                offsetY = 0;
+            }
+
+            return {
+                left: container.left + offsetX,
+                top: container.top + offsetY,
+                width: displayedW,
+                height: displayedH
+            };
+        }
+
+        // Ejecutar cuando la imagen se cargue
+        const lobbyImg = document.querySelector('.lobby-image');
+        if (lobbyImg.complete && lobbyImg.naturalWidth > 0) {
+            // Ya cargada
+            setupClickableAreas();
+        } else {
+            lobbyImg.addEventListener('load', setupClickableAreas);
+        }
+
+        // Recalcular si el usuario redimensiona la ventana
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(setupClickableAreas, 150);
+        });
+
+        window.addEventListener('load', () => {
+            // Solo limpiar la sesión del jugador (nombre).
+            // NO borrar tablonPartida ni el ID del fijado de Telegram:
+            // todas las copias comparten localStorage y borrar aquí destruye
+            // el estado de las otras pestañas abiertas.
+            sessionStorage.removeItem('playerName');
+            playerNameInput.value = '';
+            playerNameInput.focus();
+        });
+
+        // Guardar nombre mientras escribe
+        playerNameInput.addEventListener('input', (e) => {
+            const name = e.target.value.trim();
+            if (name.length >= 2) {
+                sessionStorage.setItem('playerName', name);
+            }
+        });
+
+        // Toggle música
+        toggleBtn.addEventListener('click', () => {
+            playClickSound();
+            if (audio.paused) {
+                audio.play();
+                toggleBtn.classList.remove('paused');
+                toggleBtn.classList.add('playing');
+            } else {
+                audio.pause();
+                toggleBtn.classList.remove('playing');
+                toggleBtn.classList.add('paused');
+            }
+        });
+
+        // Control de volumen
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        // Permitir click en cualquier parte para reanudar música
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.clickable-area, button, input, .modal-content')) {
+                return;
+            }
+
+            if (audio.paused) {
+                audio.play().catch(err => console.log('Error al reproducir:', err));
+                toggleBtn.classList.remove('paused');
+                toggleBtn.classList.add('playing');
+            }
+        });
+
+        // ============= SONIDO DE CLICK =============
+
+        function playClickSound() {
+            const clickSound = document.getElementById('clickSound');
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => console.log('Error al reproducir click:', err));
+        }
+
+        // ============= ÁREAS CLICKEABLES =============
+
+        document.querySelectorAll('.clickable-area').forEach(area => {
+            area.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClickSound();
+                const action = area.dataset.action;
+                handleAreaClick(action);
+            });
+        });
+
+        function handleAreaClick(action) {
+            switch(action) {
+                case 'crear-partida':
+                    handleCreateGame();
+                    break;
+                case 'unirse-partida':
+                case 'unirse-a-partida-':
+                    handleJoinGame();
+                    break;
+                case 'creditos':
+                    openModal('creditsModal');
+                    break;
+                case 'nombre-jugador':
+                    playerNameInput.focus();
+                    break;
+                case 'salir':
+                    if (confirm('¿Salir del juego?')) {
+                        window.close();
+                    }
+                    break;
+                default:
+                    console.log('Acción desconocida:', action);
+            }
+        }
+
+        // ============= CREAR PARTIDA =============
+
+        function handleCreateGame() {
+            const playerName = playerNameInput.value.trim();
+
+            if (playerName.length < 2) {
+                alert('❌ Por favor ingresa tu nombre (mínimo 2 caracteres)');
+                playerNameInput.focus();
+                return;
+            }
+
+            sessionStorage.setItem('playerName', playerName);
+            localStorage.setItem('gameSettings', JSON.stringify({
+                playerName: playerName
+            }));
+
+            // Initialize Socket.io connection
+            window.socketClient.initializeSocket(null, playerName);
+
+            // Create game via Socket.io (will initialize game in crear-partida.html)
+            // For now, just navigate to crear-partida.html which will prompt for roles
+
+            // Navegar a selección de roles
+            setTimeout(() => {
+                window.location.href = 'crear-partida.html';
+            }, 200);
+        }
+
+        // ============= UNIRSE A PARTIDA =============
+
+        async function handleJoinGame() {
+            const playerName = playerNameInput.value.trim();
+            const gameCode = document.getElementById('gameCodeInput')?.value.trim() || '';
+
+            if (playerName.length < 2) {
+                setJoinStatus('❌ Por favor ingresa tu nombre (mínimo 2 caracteres)', true);
+                playerNameInput.focus();
+                return;
+            }
+
+            if (gameCode.length < 4) {
+                setJoinStatus('❌ Por favor ingresa un código de partida válido', true);
+                return;
+            }
+
+            sessionStorage.setItem('playerName', playerName);
+            setJoinStatus('🔍 Conectando al servidor...', false, 0);
+
+            try {
+                // Initialize Socket.io connection
+                window.socketClient.initializeSocket(gameCode, playerName);
+
+                // Join game via Socket.io
+                setJoinStatus('⏳ Uniéndose a la partida...', false, 0);
+                const response = await window.socketClient.joinGameOnline(gameCode, playerName);
+
+                if (response && response.game) {
+                    setJoinStatus('✅ Unido a la partida. Redirigiendo...', false, 0);
+                    // Store current game info
+                    localStorage.setItem('currentGameId', gameCode);
+                    localStorage.setItem('currentPlayerName', playerName);
+
+                    // Navigate to waiting room
+                    setTimeout(() => {
+                        window.location.href = 'espera-jugadores.html';
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Error joining game:', error);
+                setJoinStatus('❌ ' + (error.message || 'Error al unirse a la partida'), true);
+            }
+        }
+
+        /**
+         * Muestra un toast de estado.
+         * @param {string} msg      Texto a mostrar.
+         * @param {boolean} isError Si true aplica estilo error y auto-oculta en 3 s.
+         * @param {number} [autohide=3000] ms para auto-ocultar (0 = no auto-ocultar).
+         */
+        function setJoinStatus(msg, isError, autohide) {
+            const el = document.getElementById('joinStatus');
+            el.textContent = msg;
+            el.className = isError ? 'error' : '';
+            el.style.display = 'block';
+            clearTimeout(setJoinStatus._t);
+            const delay = autohide === undefined ? 3000 : autohide;
+            if (delay > 0) {
+                setJoinStatus._t = setTimeout(() => { el.style.display = 'none'; }, delay);
+            }
+        }
+
+        // ============= FUNCIONES DE MODAL =============
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        // Cerrar modal al clickear fuera
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Tecla ESC para cerrar modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+    </script>
+</body>
+</html>

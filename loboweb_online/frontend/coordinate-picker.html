@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinate Picker - Lobo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .image-section {
+            position: relative;
+        }
+
+        .image-section h2 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+            border: 3px solid #ffd700;
+            overflow: hidden;
+        }
+
+        #lobbyImage {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            cursor: crosshair;
+        }
+
+        .coordinates-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffd700;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            pointer-events: none;
+            display: none;
+            border: 1px solid #ffd700;
+        }
+
+        .rectangle {
+            position: absolute;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .rectangle.selected {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        .coordinates-section {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .coordinates-section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .info-box label {
+            display: block;
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-box input {
+            width: 100%;
+            padding: 8px;
+            background: #2a2a2a;
+            border: 1px solid #ffd700;
+            color: #fff;
+            border-radius: 3px;
+            font-family: monospace;
+            margin-bottom: 8px;
+        }
+
+        .info-box input:focus {
+            outline: none;
+            background: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        button:hover {
+            background: #ffed4e;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .areas-list {
+            margin-top: 20px;
+        }
+
+        .area-item {
+            background: #2a2a2a;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            border-left: 4px solid #00ff00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .area-item.selected {
+            border-left-color: #ff6b6b;
+            background: #3a2a2a;
+        }
+
+        .area-info {
+            flex: 1;
+        }
+
+        .area-name {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .area-coords {
+            font-size: 0.85em;
+            color: #999;
+            font-family: monospace;
+        }
+
+        .delete-btn {
+            padding: 5px 10px;
+            background: #ff6b6b;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            width: auto;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #ff5252;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+
+        .export-section h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .export-code {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #ffd700;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #0f0;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #00ff00;
+            color: #000;
+        }
+
+        .copy-btn:hover {
+            background: #00dd00;
+        }
+
+        .instructions {
+            background: rgba(0, 150, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0096ff;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .instructions strong {
+            color: #0096ff;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sección de imagen -->
+        <div class="image-section">
+            <h2>🖼️ Imagen - Haz Click para obtener coordenadas</h2>
+
+            <div style="margin-bottom: 15px;">
+                <label style="color: #ffd700; font-weight: bold; display: block; margin-bottom: 8px;">📂 Selecciona imagen:</label>
+                <select id="imageSelector" style="width: 100%; padding: 10px; background: #2a2a2a; border: 2px solid #ffd700; color: #fff; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    <option value="recursos/lobby.png">lobby.png</option>
+                    <option value="recursos/crear partida.png">crear partida.png</option>
+                    <option value="recursos/espera de jugadores.png">espera de jugadores.png</option>
+                    <option value="recursos/juego.png">juego.png</option>
+                    <option value="recursos/votar.png">votar.png</option>
+                </select>
+                <p style="font-size: 0.85em; color: #999; margin-top: 5px;">O carga una imagen personalizada:</p>
+                <input type="file" id="customImage" accept="image/*" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #ffd700; color: #fff; border-radius: 3px; margin-top: 5px;">
+            </div>
+
+            <div class="instructions">
+                <strong>Instrucciones:</strong><br>
+                1. Click en la imagen para comenzar a marcar área<br>
+                2. Arrastra para crear un rectángulo<br>
+                3. Dale un nombre en el formulario<br>
+                4. Haz click en "Guardar Área"<br>
+                5. Repite para cada zona clickeable
+            </div>
+
+            <div id="imageContainer">
+                <img id="lobbyImage" src="recursos/lobby.png" alt="Lobby">
+                <div class="coordinates-display" id="coordDisplay"></div>
+            </div>
+        </div>
+
+        <!-- Sección de coordenadas -->
+        <div class="coordinates-section">
+            <h2>📍 Áreas Clickeables</h2>
+
+            <div class="info-box">
+                <label>Nombre del área:</label>
+                <input type="text" id="areaName" placeholder="ej: Crear Partida, Unirse, etc">
+
+                <label>Acción (URL o función):</label>
+                <input type="text" id="areaAction" placeholder="ej: create-game, join-game, etc">
+
+                <div class="button-group">
+                    <button onclick="clearSelection()">Limpiar</button>
+                    <button onclick="saveArea()">✅ Guardar Área</button>
+                </div>
+
+                <hr style="border: 1px solid #ffd700; margin: 20px 0;">
+                <h3 style="color: #ffd700; margin-bottom: 15px;">🔄 Duplicar con espaciado</h3>
+
+                <label style="display: block; color: #999; margin-bottom: 8px;">Cantidad de repeticiones:</label>
+                <input type="number" id="repeatCount" min="2" max="20" value="3" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #ffd700; color: #fff; border-radius: 3px; margin-bottom: 10px;">
+
+                <label style="display: block; color: #999; margin-bottom: 8px;">Espaciado vertical (px):</label>
+                <input type="number" id="verticalSpacing" min="0" max="500" value="50" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #ffd700; color: #fff; border-radius: 3px; margin-bottom: 10px;">
+
+                <label style="display: block; color: #999; margin-bottom: 8px;">Espaciado horizontal (px):</label>
+                <input type="number" id="horizontalSpacing" min="0" max="500" value="0" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #ffd700; color: #fff; border-radius: 3px; margin-bottom: 10px;">
+
+                <button onclick="duplicateArea()" style="width: 100%; padding: 10px; background: #00ff00; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; margin-top: 10px;">🔀 Duplicar Patrón</button>
+            </div>
+
+            <div class="info-box">
+                <label>Coordenadas (X, Y, Ancho, Alto):</label>
+                <input type="text" id="coordsDisplay" readonly placeholder="Selecciona un área en la imagen">
+            </div>
+
+            <div class="areas-list">
+                <h3 style="color: #ffd700; margin-bottom: 10px;">Áreas guardadas:</h3>
+                <div id="areasList"></div>
+            </div>
+
+            <div class="export-section">
+                <h3>📋 Código JSON para copiar:</h3>
+                <div class="export-code" id="exportCode">[]</div>
+                <button class="copy-btn" onclick="copyCode()">📋 Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageContainer = document.getElementById('imageContainer');
+        const lobbyImage = document.getElementById('lobbyImage');
+        const coordDisplay = document.getElementById('coordDisplay');
+        const coordsDisplayInput = document.getElementById('coordsDisplay');
+        const areaNameInput = document.getElementById('areaName');
+        const areaActionInput = document.getElementById('areaAction');
+        const areasListDiv = document.getElementById('areasList');
+        const exportCodeDiv = document.getElementById('exportCode');
+        const imageSelector = document.getElementById('imageSelector');
+        const customImageInput = document.getElementById('customImage');
+
+        let isDrawing = false;
+        let startX, startY;
+        let currentRect = null;
+        let areas = JSON.parse(localStorage.getItem('lobbyAreas')) || [];
+        let selectedAreaIndex = null;
+
+        // Evento de mouse down
+        lobbyImage.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = imageContainer.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            // Crear rectángulo
+            if (currentRect) currentRect.remove();
+            currentRect = document.createElement('div');
+            currentRect.className = 'rectangle';
+            currentRect.style.left = startX + 'px';
+            currentRect.style.top = startY + 'px';
+            currentRect.style.width = '0px';
+            currentRect.style.height = '0px';
+            imageContainer.appendChild(currentRect);
+
+            coordDisplay.style.display = 'block';
+        });
+
+        // Evento de mouse move
+        document.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const rect = imageContainer.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+
+            currentRect.style.left = Math.min(startX, currentX) + 'px';
+            currentRect.style.top = Math.min(startY, currentY) + 'px';
+            currentRect.style.width = width + 'px';
+            currentRect.style.height = height + 'px';
+
+            coordDisplay.textContent = `X: ${Math.round(Math.min(startX, currentX))}, Y: ${Math.round(Math.min(startY, currentY))}, W: ${Math.round(width)}, H: ${Math.round(height)}`;
+            coordsDisplayInput.value = `${Math.round(Math.min(startX, currentX))}, ${Math.round(Math.min(startY, currentY))}, ${Math.round(width)}, ${Math.round(height)}`;
+        });
+
+        // Evento de mouse up
+        document.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        function clearSelection() {
+            if (currentRect) currentRect.remove();
+            currentRect = null;
+            coordDisplay.style.display = 'none';
+            coordsDisplayInput.value = '';
+            areaNameInput.value = '';
+            areaActionInput.value = '';
+            selectedAreaIndex = null;
+        }
+
+        function saveArea() {
+            if (!coordsDisplayInput.value || !areaNameInput.value) {
+                alert('Por favor, dibuja un área y asigna un nombre');
+                return;
+            }
+
+            const [x, y, w, h] = coordsDisplayInput.value.split(',').map(v => parseInt(v.trim()));
+            const name = areaNameInput.value;
+            const action = areaActionInput.value || name.toLowerCase().replace(/\s+/g, '-');
+
+            const area = { x, y, width: w, height: h, name, action };
+
+            if (selectedAreaIndex !== null) {
+                areas[selectedAreaIndex] = area;
+                selectedAreaIndex = null;
+            } else {
+                areas.push(area);
+            }
+
+            localStorage.setItem('lobbyAreas', JSON.stringify(areas));
+            renderAreas();
+            clearSelection();
+            updateExportCode();
+        }
+
+        function renderAreas() {
+            areasListDiv.innerHTML = '';
+            areas.forEach((area, index) => {
+                const div = document.createElement('div');
+                div.className = 'area-item' + (selectedAreaIndex === index ? ' selected' : '');
+                div.onclick = () => selectArea(index);
+                div.innerHTML = `
+                    <div class="area-info">
+                        <div class="area-name">${area.name}</div>
+                        <div class="area-coords">X: ${area.x}, Y: ${area.y}, W: ${area.width}, H: ${area.height}</div>
+                        <div style="color: #0096ff; font-size: 0.8em;">Acción: ${area.action}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteArea(event, ${index})">Eliminar</button>
+                `;
+                areasListDiv.appendChild(div);
+            });
+        }
+
+        function selectArea(index) {
+            selectedAreaIndex = index;
+            const area = areas[index];
+            coordsDisplayInput.value = `${area.x}, ${area.y}, ${area.width}, ${area.height}`;
+            areaNameInput.value = area.name;
+            areaActionInput.value = area.action;
+
+            // Mostrar rectángulo seleccionado
+            if (currentRect) currentRect.remove();
+            currentRect = document.createElement('div');
+            currentRect.className = 'rectangle selected';
+            currentRect.style.left = area.x + 'px';
+            currentRect.style.top = area.y + 'px';
+            currentRect.style.width = area.width + 'px';
+            currentRect.style.height = area.height + 'px';
+            imageContainer.appendChild(currentRect);
+
+            renderAreas();
+        }
+
+        function deleteArea(event, index) {
+            event.stopPropagation();
+            areas.splice(index, 1);
+            localStorage.setItem('lobbyAreas', JSON.stringify(areas));
+            if (selectedAreaIndex === index) selectedAreaIndex = null;
+            renderAreas();
+            updateExportCode();
+        }
+
+        function updateExportCode() {
+            exportCodeDiv.textContent = JSON.stringify(areas, null, 2);
+        }
+
+        function duplicateArea() {
+            if (selectedAreaIndex === null) {
+                alert('Por favor, selecciona un área primero');
+                return;
+            }
+
+            const baseArea = areas[selectedAreaIndex];
+            const repeatCount = parseInt(document.getElementById('repeatCount').value) || 3;
+            const verticalSpacing = parseInt(document.getElementById('verticalSpacing').value) || 0;
+            const horizontalSpacing = parseInt(document.getElementById('horizontalSpacing').value) || 0;
+
+            // Validar
+            if (repeatCount < 2) {
+                alert('La cantidad debe ser mayor a 1');
+                return;
+            }
+
+            // Crear copias
+            for (let i = 1; i < repeatCount; i++) {
+                const newArea = {
+                    ...baseArea,
+                    x: baseArea.x + (horizontalSpacing * i),
+                    y: baseArea.y + (verticalSpacing * i),
+                    name: baseArea.name + ` (${i + 1})`,
+                    action: baseArea.action + `-${i + 1}`
+                };
+                areas.push(newArea);
+            }
+
+            localStorage.setItem('lobbyAreas', JSON.stringify(areas));
+            renderAreas();
+            updateExportCode();
+            alert(`✅ ${repeatCount - 1} áreas duplicadas con éxito`);
+        }
+
+        function copyCode() {
+            const code = JSON.stringify(areas, null, 2);
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ JSON copiado al portapapeles');
+            }).catch(() => {
+                alert('Error al copiar');
+            });
+        }
+
+        // Cambiar imagen desde selector
+        imageSelector.addEventListener('change', (e) => {
+            const imagePath = e.target.value;
+            lobbyImage.src = imagePath;
+            // Limpiar áreas al cambiar imagen
+            clearSelection();
+            console.log('Imagen cargada:', imagePath);
+        });
+
+        // Cargar imagen personalizada
+        customImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    lobbyImage.src = event.target.result;
+                    clearSelection();
+                    console.log('Imagen personalizada cargada');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Inicializar
+        renderAreas();
+        updateExportCode();
+    </script>
+</body>
+</html>

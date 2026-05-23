@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Coordinate Picker - Lobo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .image-section {
+            position: relative;
+        }
+
+        .image-section h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+            border: 3px solid #ffd700;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        #createdImage {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            cursor: crosshair;
+        }
+
+        .x-guide {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 215, 0, 0.3);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .x-guide.active {
+            background: #00ff00;
+            opacity: 0.6;
+        }
+
+        .x-label {
+            position: absolute;
+            top: -25px;
+            padding: 5px 10px;
+            background: #ffd700;
+            color: #000;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.9em;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .coordinates-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #ffd700;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: 2px solid #ffd700;
+            pointer-events: none;
+            font-size: 1.1em;
+            min-width: 150px;
+        }
+
+        .coordinates-section {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            border-radius: 5px;
+            height: fit-content;
+        }
+
+        .coordinates-section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .info-box label {
+            display: block;
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-box input {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 2px solid #ffd700;
+            color: #fff;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .info-box input:focus {
+            outline: none;
+            background: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #ffed4e;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .marked-positions {
+            margin-top: 20px;
+        }
+
+        .marked-positions h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .position-item {
+            background: #2a2a2a;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            border-left: 4px solid #00ff00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .position-name {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .position-value {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #00ff00;
+        }
+
+        .delete-btn {
+            padding: 5px 10px;
+            background: #ff6b6b;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            width: auto;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #ff5252;
+        }
+
+        .instructions {
+            background: rgba(0, 150, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0096ff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .instructions strong {
+            color: #0096ff;
+        }
+
+        .step {
+            margin-bottom: 8px;
+        }
+
+        .export-section {
+            background: #2a2a2a;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .export-section h3 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .export-code {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #00ff00;
+            font-family: monospace;
+            font-size: 1em;
+            color: #0f0;
+            font-weight: bold;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: #00ff00;
+            color: #000;
+        }
+
+        .copy-btn:hover {
+            background: #00dd00;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .coordinates-section {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📍 X-Coordinate Picker</h1>
+
+        <!-- Sección de imagen -->
+        <div class="image-section">
+            <h2>🖼️ Haz click para marcar posiciones X</h2>
+            <div class="instructions">
+                <strong>📋 Instrucciones:</strong>
+                <div class="step">1. <strong>Click en una posición</strong> para marcar su X</div>
+                <div class="step">2. <strong>Dale un nombre</strong> (ej: "cont_", "bmas_")</div>
+                <div class="step">3. <strong>Haz click en "Guardar"</strong></div>
+                <div class="step">4. <strong>Repite</strong> para cada columna importante</div>
+                <div class="step">5. <strong>Copia los valores X</strong> al rol-generator</div>
+            </div>
+
+            <div id="imageContainer">
+                <img id="createdImage" src="recursos/crear partida.png" alt="Crear Partida">
+                <div class="coordinates-display" id="coordDisplay" style="display: none;">X: <span id="xValue">0</span></div>
+            </div>
+        </div>
+
+        <!-- Sección de coordenadas -->
+        <div class="coordinates-section">
+            <h2>📍 Posiciones X Marcadas</h2>
+
+            <div class="info-box">
+                <label>Nombre de la posición:</label>
+                <input type="text" id="positionName" placeholder="ej: contador, boton-mas, bres, etc">
+
+                <label>Posición X (se completa automáticamente):</label>
+                <input type="text" id="xPosition" readonly placeholder="Haz click en la imagen">
+
+                <div class="button-group">
+                    <button onclick="clearMark()">Limpiar</button>
+                    <button onclick="savePosition()">✅ Guardar</button>
+                </div>
+            </div>
+
+            <div class="marked-positions">
+                <h3>Posiciones guardadas:</h3>
+                <div id="positionsList"></div>
+                <div class="export-section" id="exportSection" style="display: none;">
+                    <h3>📋 Valores X (copia estos números):</h3>
+                    <div class="export-code" id="exportCode"></div>
+                    <button class="copy-btn" onclick="copyValues()">📋 Copiar Valores</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageContainer = document.getElementById('imageContainer');
+        const createdImage = document.getElementById('createdImage');
+        const coordDisplay = document.getElementById('coordDisplay');
+        const xValueSpan = document.getElementById('xValue');
+        const positionNameInput = document.getElementById('positionName');
+        const xPositionInput = document.getElementById('xPosition');
+        const positionsListDiv = document.getElementById('positionsList');
+        const exportCodeDiv = document.getElementById('exportCode');
+        const exportSection = document.getElementById('exportSection');
+
+        let currentX = null;
+        let positions = JSON.parse(localStorage.getItem('xPositions')) || [];
+        let activeGuide = null;
+
+        // Evento de click en la imagen
+        createdImage.addEventListener('click', (e) => {
+            const rect = imageContainer.getBoundingClientRect();
+            const imgRect = createdImage.getBoundingClientRect();
+
+            // Calcular posición X relativa a la imagen
+            const x = Math.round(e.clientX - imgRect.left);
+
+            currentX = x;
+            xValueSpan.textContent = x;
+            xPositionInput.value = x;
+            coordDisplay.style.display = 'block';
+
+            // Mostrar guía visual
+            if (activeGuide) activeGuide.remove();
+            activeGuide = document.createElement('div');
+            activeGuide.className = 'x-guide active';
+            activeGuide.style.left = x + 'px';
+            imageContainer.appendChild(activeGuide);
+
+            positionNameInput.focus();
+        });
+
+        // Evento de mouse move para mostrar X en tiempo real
+        createdImage.addEventListener('mousemove', (e) => {
+            const imgRect = createdImage.getBoundingClientRect();
+            const x = Math.round(e.clientX - imgRect.left);
+
+            if (!coordDisplay.style.display || coordDisplay.style.display === 'none') {
+                coordDisplay.style.display = 'block';
+            }
+            xValueSpan.textContent = x;
+        });
+
+        createdImage.addEventListener('mouseleave', () => {
+            if (!currentX) {
+                coordDisplay.style.display = 'none';
+            }
+        });
+
+        function clearMark() {
+            currentX = null;
+            xPositionInput.value = '';
+            positionNameInput.value = '';
+            coordDisplay.style.display = 'none';
+            if (activeGuide) activeGuide.remove();
+        }
+
+        function savePosition() {
+            if (!currentX || !positionNameInput.value.trim()) {
+                alert('Por favor, selecciona una posición y dale un nombre');
+                return;
+            }
+
+            const position = {
+                name: positionNameInput.value.trim(),
+                x: currentX
+            };
+
+            positions.push(position);
+            localStorage.setItem('xPositions', JSON.stringify(positions));
+            renderPositions();
+            updateExport();
+            clearMark();
+        }
+
+        function renderPositions() {
+            positionsListDiv.innerHTML = '';
+            positions.forEach((pos, index) => {
+                const div = document.createElement('div');
+                div.className = 'position-item';
+                div.innerHTML = `
+                    <div>
+                        <div class="position-name">${pos.name}</div>
+                        <div class="position-value">X = ${pos.x}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deletePosition(${index})">Eliminar</button>
+                `;
+                positionsListDiv.appendChild(div);
+            });
+        }
+
+        function deletePosition(index) {
+            positions.splice(index, 1);
+            localStorage.setItem('xPositions', JSON.stringify(positions));
+            renderPositions();
+            updateExport();
+        }
+
+        function updateExport() {
+            if (positions.length === 0) {
+                exportSection.style.display = 'none';
+                return;
+            }
+
+            const values = positions.map(p => `${p.name}: ${p.x}`).join(' | ');
+            exportCodeDiv.textContent = values;
+            exportSection.style.display = 'block';
+        }
+
+        function copyValues() {
+            const values = positions.map(p => p.x).join(', ');
+            navigator.clipboard.writeText(values).then(() => {
+                alert('✅ Valores copiados: ' + values);
+            }).catch(() => {
+                alert('Error al copiar');
+            });
+        }
+
+        // Inicializar
+        renderPositions();
+        updateExport();
+    </script>
+</body>
+</html>

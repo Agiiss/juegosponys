@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobo - Launcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        p {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            background: #ffed4e;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .info {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #ffd700;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            color: #ffd700;
+            border-radius: 3px;
+        }
+
+        .info strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .size-display {
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: #999;
+        }
+
+        .warning {
+            color: #ff6b6b;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐺 LOBO</h1>
+        <p>Juego de Deducción y Estrategia</p>
+
+        <div class="info">
+            <strong>Dimensiones de pantalla:</strong>
+            <span id="dimensions">Cargando...</span>
+            <div class="size-display">Resolución óptima para mejor experiencia</div>
+        </div>
+
+        <button class="btn" onclick="openLobby()">🎮 Abrir Lobby</button>
+
+        <p class="warning">
+            ℹ️ Si los navegadores no responden bien, abre index.html directamente.<br>
+            Algunos navegadores pueden bloquear la redimensión de ventana.
+        </p>
+    </div>
+
+    <script>
+        // Cargar imagen para obtener dimensiones
+        const img = new Image();
+        img.src = 'recursos/lobby.png';
+
+        img.onload = () => {
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
+            document.getElementById('dimensions').textContent = `${width} × ${height} px`;
+
+            // Guardar en localStorage para usar en index.html
+            localStorage.setItem('imageDimensions', JSON.stringify({ width, height }));
+        };
+
+        function openLobby() {
+            const img = new Image();
+            img.src = 'recursos/lobby.png';
+
+            img.onload = () => {
+                const width = img.naturalWidth;
+                const height = img.naturalHeight;
+
+                // Abrir ventana con tamaño específico
+                // Las opciones son: width, height, left, top, menubar, toolbar, location, status, resizable, scrollbars
+                window.open(
+                    'index.html',
+                    'LoboLobby',
+                    `width=${width},height=${height},left=100,top=100,menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+                );
+            };
+        }
+    </script>
+</body>
+</html>

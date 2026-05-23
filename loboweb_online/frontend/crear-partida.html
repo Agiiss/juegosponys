@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lobo - Crear Partida">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Crear Partida - Lobo</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="recursos/personajes/lobo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .clickable-area {
+            position: fixed;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        .clickable-area:hover {
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .counter-display {
+            position: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #ffd700;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.05);
+        }
+
+        .volume-control {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-label {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        audio {
+            display: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 30px;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .modal-content p {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .modal-buttons button:hover {
+            background: #ffed4e;
+            transform: scale(1.05);
+        }
+
+        .modal-buttons button:active {
+            transform: scale(0.95);
+        }
+
+        .game-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            z-index: 100;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .game-info-item {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <img src="recursos/crear partida.png" alt="Crear Partida" class="game-image" id="gameImage">
+        <!-- Los botones se cargarán dinámicamente aquí -->
+    </div>
+
+    <!-- Panel de información de juego -->
+    <div class="game-info">
+        <div class="game-info-item">🎭 Roles Total: <span id="rolesTotal">0</span></div>
+        <div class="game-info-item">🐺 Lobos: <span id="lobosTotal">0</span></div>
+        <div class="game-info-item">👨 Aldeanos: <span id="aldeanosTotal">0</span></div>
+    </div>
+
+    <button class="back-button" onclick="goBack()">← Volver</button>
+
+    <div class="volume-control">
+        <span class="volume-label">🔊</span>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h2>✅ Confirmar Partida</h2>
+            <p id="confirmText">Resumen de la partida</p>
+            <div class="modal-buttons">
+                <button onclick="createGame()">🎮 Crear Partida</button>
+                <button onclick="closeModal()">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="recursos/recursos de audio/23_musica de fondo.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+        <source src="recursos/recursos de audio/22_clicks.wav" type="audio/wav">
+    </audio>
+
+    <!-- Socket.io client + módulo de partida + coords predeterminadas -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="coords-defaults.js"></script>
+    <script src="socket-client.js"></script>
+    <script src="partida.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error:', err));
+        }
+
+        const audio = document.getElementById('bgMusic');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const gameContainer = document.querySelector('.game-container');
+
+        // Iniciar música
+        audio.volume = 0.7;
+        audio.play().catch(err => console.log('Autoplay bloqueado:', err));
+
+        // Control de volumen
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        // Función para reproducir sonido de click
+        function playClickSound() {
+            const clickSound = document.getElementById('clickSound');
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => console.log('Error:', err));
+        }
+
+        // ============= DATOS DE ROLES =============
+
+        const rolesData = [
+            { name: "doble", type: "villager" },
+            { name: "lobo", type: "wolf" },
+            { name: "aprendiz", type: "villager" },
+            { name: "ladron", type: "villager" },
+            { name: "alborotadora", type: "villager" },
+            { name: "borracho", type: "villager" },
+            { name: "insomia", type: "villager" },
+            { name: "aldeano", type: "villager" },
+            { name: "curtidor", type: "villager" }
+        ];
+
+        // Contadores
+        let counters = {
+            rolestotales: 0,
+            lobostotales: 0,
+            aldeanostotales: 0
+        };
+
+        rolesData.forEach(role => {
+            counters[role.name] = 0;
+        });
+
+        // ============= ÁREAS CLICKEABLES JSON =============
+
+        const gameAreas = [
+            { x: 180, y: 77, width: 16, height: 14, name: "bres_doble", action: "bres_doble" },
+            { x: 195, y: 77, width: 16, height: 14, name: "cont_doble", action: "cont_doble" },
+            { x: 223, y: 77, width: 16, height: 14, name: "bmas_doble", action: "bmas_doble" },
+            { x: 180, y: 96, width: 15, height: 15, name: "bres_lobo", action: "bres_lobo" },
+            { x: 196, y: 96, width: 15, height: 15, name: "cont_lobo", action: "cont_lobo" },
+            { x: 224, y: 96, width: 15, height: 15, name: "bmas_lobo", action: "bmas_lobo" },
+            { x: 180, y: 116, width: 14, height: 16, name: "bres_aprendiz", action: "bres_aprendiz" },
+            { x: 196, y: 116, width: 14, height: 16, name: "cont_aprendiz", action: "cont_aprendiz" },
+            { x: 224, y: 116, width: 14, height: 16, name: "bmas_aprendiz", action: "bmas_aprendiz" },
+            { x: 180, y: 133, width: 16, height: 16, name: "bres_ladron", action: "bres_ladron" },
+            { x: 195, y: 133, width: 16, height: 16, name: "cont_ladron", action: "cont_ladron" },
+            { x: 223, y: 133, width: 16, height: 16, name: "bmas_ladron", action: "bmas_ladron" },
+            { x: 180, y: 153, width: 14, height: 13, name: "bres_alborotadora", action: "bres_alborotadora" },
+            { x: 196, y: 153, width: 14, height: 13, name: "cont_alborotadora", action: "cont_alborotadora" },
+            { x: 224, y: 153, width: 14, height: 13, name: "bmas_alborotadora", action: "bmas_alborotadora" },
+            { x: 180, y: 171, width: 13, height: 15, name: "bres_borracho", action: "bres_borracho" },
+            { x: 197, y: 171, width: 13, height: 15, name: "cont_borracho", action: "cont_borracho" },
+            { x: 225, y: 171, width: 13, height: 15, name: "bmas_borracho", action: "bmas_borracho" },
+            { x: 180, y: 192, width: 13, height: 13, name: "bres_insomia", action: "bres_insomia" },
+            { x: 197, y: 192, width: 13, height: 13, name: "cont_insomia", action: "cont_insomia" },
+            { x: 225, y: 192, width: 13, height: 13, name: "bmas_insomia", action: "bmas_insomia" },
+            { x: 180, y: 210, width: 15, height: 13, name: "bres_aldeano", action: "bres_aldeano" },
+            { x: 196, y: 210, width: 15, height: 13, name: "cont_aldeano", action: "cont_aldeano" },
+            { x: 224, y: 210, width: 15, height: 13, name: "bmas_aldeano", action: "bmas_aldeano" },
+            { x: 180, y: 231, width: 14, height: 11, name: "bres_curtidor", action: "bres_curtidor" },
+            { x: 196, y: 231, width: 14, height: 11, name: "cont_curtidor", action: "cont_curtidor" },
+            { x: 224, y: 231, width: 14, height: 11, name: "bmas_curtidor", action: "bmas_curtidor" },
+            { x: 96, y: 260, width: 86, height: 17, name: "b_cancelar", action: "backlobby" },
+            { x: 194, y: 260, width: 96, height: 19, name: "b_crearpartida", action: "inigame" }
+        ];
+
+        // ============= CONFIG: Tamaño al que se capturaron las coordenadas =============
+        // Fallback si NO hay capturas hechas con captura-guiada.html.
+        // Si las coords no se alinean, usa la herramienta de captura guiada.
+        const CAPTURE_REF_WIDTH = 320;
+        const CAPTURE_REF_HEIGHT = 290;
+
+        // Intentar cargar coords capturadas con captura-guiada.html
+        const savedCoords = localStorage.getItem('crearPartidaCoordinates');
+        if (savedCoords) {
+            try {
+                const parsed = JSON.parse(savedCoords);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    // Reemplazar gameAreas con las coords capturadas
+                    parsed.forEach(c => {
+                        // Encontrar el área correspondiente o agregar
+                        const idx = gameAreas.findIndex(a => a.name === c.name);
+                        const action = c.name === 'b_cancelar' ? 'backlobby' :
+                                       c.name === 'b_crearpartida' ? 'inigame' :
+                                       c.name;
+                        const newArea = {
+                            name: c.name,
+                            x: c.x,
+                            y: c.y,
+                            width: c.width,
+                            height: c.height,
+                            action: action,
+                            captureImageWidth: c.captureImageWidth,
+                            captureImageHeight: c.captureImageHeight
+                        };
+                        if (idx >= 0) gameAreas[idx] = newArea;
+                        else gameAreas.push(newArea);
+                    });
+                    console.log('✅ Coords cargadas de captura-guiada:', parsed.length, 'elementos');
+                }
+            } catch (e) {
+                console.error('Error parseando crearPartidaCoordinates:', e);
+            }
+        }
+
+        // ============= CALCULAR ÁREA VISIBLE DE LA IMAGEN (object-fit: contain) =============
+        function getDisplayedImageRect(img) {
+            const container = img.getBoundingClientRect();
+            const natW = img.naturalWidth;
+            const natH = img.naturalHeight;
+            if (!natW || !natH) return container;
+
+            const containerRatio = container.width / container.height;
+            const imageRatio = natW / natH;
+
+            let displayedW, displayedH, offsetX, offsetY;
+            if (imageRatio > containerRatio) {
+                displayedW = container.width;
+                displayedH = container.width / imageRatio;
+                offsetX = 0;
+                offsetY = (container.height - displayedH) / 2;
+            } else {
+                displayedH = container.height;
+                displayedW = container.height * imageRatio;
+                offsetX = (container.width - displayedW) / 2;
+                offsetY = 0;
+            }
+
+            return {
+                left: container.left + offsetX,
+                top: container.top + offsetY,
+                width: displayedW,
+                height: displayedH
+            };
+        }
+
+
+        // ============= RENDERIZAR ÁREAS (con auto-escalado) =============
+
+        function renderGameAreas() {
+            // Limpiar áreas existentes
+            gameContainer.querySelectorAll('.clickable-area, .counter-display').forEach(el => el.remove());
+
+            const img = document.getElementById('gameImage');
+            const imgRect = getDisplayedImageRect(img);
+
+
+            gameAreas.forEach(area => {
+                // Cada coord puede tener su propio captureImageWidth/Height (de captura-guiada.html)
+                // Si no, se usa el fallback global
+                const capW = area.captureImageWidth  || CAPTURE_REF_WIDTH;
+                const capH = area.captureImageHeight || CAPTURE_REF_HEIGHT;
+                const scaleX = imgRect.width  / capW;
+                const scaleY = imgRect.height / capH;
+
+                const finalX = imgRect.left + area.x * scaleX;
+                const finalY = imgRect.top  + area.y * scaleY;
+                const finalW = area.width  * scaleX;
+                const finalH = area.height * scaleY;
+
+                // Los total_X NO son clickeables, solo muestran un número
+                const isTotal   = area.name.startsWith('total_');
+                const isCont    = area.name.startsWith('cont_');
+
+                if (!isTotal) {
+                    const div = document.createElement('div');
+                    div.className = 'clickable-area';
+                    div.style.left = finalX + 'px';
+                    div.style.top = finalY + 'px';
+                    div.style.width = finalW + 'px';
+                    div.style.height = finalH + 'px';
+                    div.title = area.name;
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        playClickSound();
+                        handleAreaClick(area);
+                    };
+                    gameContainer.appendChild(div);
+                }
+
+
+                // Crear display para contadores individuales (cont_X) y totales (total_X)
+                if (area.name.startsWith('cont_') || isTotal) {
+                    const counterDiv = document.createElement('div');
+                    counterDiv.className = 'counter-display';
+                    counterDiv.style.left = finalX + 'px';
+                    counterDiv.style.top = finalY + 'px';
+                    counterDiv.style.width = finalW + 'px';
+                    counterDiv.style.height = finalH + 'px';
+                    counterDiv.style.fontSize = Math.max(12, finalH * 0.7) + 'px';
+                    counterDiv.id = 'counter_' + area.name;
+                    counterDiv.textContent = '0';
+                    gameContainer.appendChild(counterDiv);
+                }
+            });
+
+            // Si hay total_X capturados, ocultar el panel lateral
+            const hasTotalOverlay = gameAreas.some(a => a.name.startsWith('total_'));
+            const sidePanel = document.querySelector('.game-info');
+            if (sidePanel) sidePanel.style.display = hasTotalOverlay ? 'none' : '';
+
+            updateCounterDisplays();
+        }
+
+        // ============= MANEJAR CLICKS =============
+
+        function handleAreaClick(area) {
+            if (area.action === 'backlobby') {
+                goBack();
+            } else if (area.action === 'inigame') {
+                confirmCreateGame();
+            } else if (area.name.startsWith('bmas_')) {
+                handleIncrement(area.name);
+            } else if (area.name.startsWith('bres_')) {
+                handleDecrement(area.name);
+            }
+        }
+
+        function handleIncrement(buttonName) {
+            const roleName = buttonName.replace('bmas_', '');
+            const roleInfo = rolesData.find(r => r.name === roleName);
+
+            if (roleInfo) {
+                counters[roleName]++;
+
+                // Actualizar contadores totales
+                if (roleInfo.type === 'wolf') {
+                    counters.lobostotales++;
+                } else {
+                    counters.aldeanostotales++;
+                }
+
+                counters.rolestotales++;
+                updateCounterDisplays();
+            }
+        }
+
+        function handleDecrement(buttonName) {
+            const roleName = buttonName.replace('bres_', '');
+            const roleInfo = rolesData.find(r => r.name === roleName);
+
+            if (roleInfo && counters[roleName] > 0) {
+                counters[roleName]--;
+
+                // Actualizar contadores totales
+                if (roleInfo.type === 'wolf') {
+                    counters.lobostotales--;
+                } else {
+                    counters.aldeanostotales--;
+                }
+
+                counters.rolestotales--;
+                updateCounterDisplays();
+            }
+        }
+
+        function updateCounterDisplays() {
+            // Contadores individuales por rol (sobre la imagen)
+            rolesData.forEach(role => {
+                const counterDiv = document.getElementById('counter_cont_' + role.name);
+                if (counterDiv) {
+                    counterDiv.textContent = counters[role.name];
+                }
+            });
+
+            // Contadores totales sobre la imagen (si fueron capturados con captura-guiada)
+            const totalRoles    = document.getElementById('counter_total_roles');
+            const totalLobos    = document.getElementById('counter_total_lobos');
+            const totalAldeanos = document.getElementById('counter_total_aldeanos');
+            if (totalRoles)    totalRoles.textContent    = counters.rolestotales;
+            if (totalLobos)    totalLobos.textContent    = counters.lobostotales;
+            if (totalAldeanos) totalAldeanos.textContent = counters.aldeanostotales;
+
+            // Panel lateral (fallback, si no hay total_X capturados)
+            const elRoles = document.getElementById('rolesTotal');
+            const elLobos = document.getElementById('lobosTotal');
+            const elAld   = document.getElementById('aldeanosTotal');
+            if (elRoles) elRoles.textContent = counters.rolestotales;
+            if (elLobos) elLobos.textContent = counters.lobostotales;
+            if (elAld)   elAld.textContent   = counters.aldeanostotales;
+        }
+
+        // ============= CREAR PARTIDA =============
+
+        function confirmCreateGame() {
+            const confirmText = `
+                🎭 Roles Total: ${counters.rolestotales}<br>
+                🐺 Lobos: ${counters.lobostotales}<br>
+                👨 Aldeanos: ${counters.aldeanostotales}<br>
+                👤 Jugador: ${localStorage.getItem('playerName') || 'Jugador'}<br><br>
+                ¿Confirmar creación de partida?
+            `;
+            document.getElementById('confirmText').innerHTML = confirmText;
+            openModal('confirmModal');
+        }
+
+        // Mapeo de nombres internos (lowercase) → nombres usados en partida.js
+        const ROLE_NAME_MAP = {
+            doble: 'Doble', lobo: 'Lobo', aprendiz: 'Aprendiz', ladron: 'Ladron',
+            alborotadora: 'Alborotadora', borracho: 'Borracho', insomia: 'Insomia',
+            aldeano: 'Aldeano', curtidor: 'Curtidor'
+        };
+
+        async function createGame() {
+            const playerName = localStorage.getItem('playerName') || 'Anfitrión';
+
+            // Validación: total cartas >= min jugadores + 4 centro
+            const totalCartas = counters.rolestotales;
+            if (totalCartas < 8) { // Mínimo 4 jugadores + 4 cartas centro
+                alert(`❌ Faltan cartas\n\nCartas mínimas: 8\nCartas configuradas: ${totalCartas}`);
+                return;
+            }
+
+            // Build roles config for server
+            const rolesJugables = {};
+            rolesData.forEach(role => {
+                const cant = counters[role.name];
+                if (cant > 0 && ROLE_NAME_MAP[role.name]) {
+                    rolesJugables[ROLE_NAME_MAP[role.name]] = cant;
+                }
+            });
+
+            console.log('🎴 Creando partida con roles:', rolesJugables);
+
+            try {
+                // Create game via Socket.io
+                const response = await window.socketClient.createGameOnline(playerName, rolesJugables);
+                const gameId = response.gameId;
+
+                console.log(`✅ Partida creada: ${gameId}`);
+
+                // Store game info locally
+                localStorage.setItem('currentGameId', gameId);
+                localStorage.setItem('currentPlayerName', playerName);
+
+                alert(
+                    `✅ Partida creada\n\n` +
+                    `Código: ${gameId}\n` +
+                    `Anfitrión: ${playerName}\n` +
+                    `Comparte este código con otros jugadores`
+                );
+
+                closeModal();
+                setTimeout(() => window.location.href = 'espera-jugadores.html', 300);
+            } catch (error) {
+                console.error('Error creating game:', error);
+                alert('❌ Error al crear partida:\n' + error.message);
+            }
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        function goBack() {
+            playClickSound();
+            // Regresa a la sala de espera (conserva el tablón y jugadores)
+            window.location.href = 'espera-jugadores.html';
+        }
+
+        // Cerrar modal al clickear fuera
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Tecla ESC para cerrar
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Inicializar cuando la imagen esté cargada
+        const gameImg = document.getElementById('gameImage');
+        if (gameImg.complete && gameImg.naturalWidth > 0) {
+            renderGameAreas();
+        } else {
+            gameImg.addEventListener('load', renderGameAreas);
+        }
+
+        // Recalcular si cambia el tamaño de ventana
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(renderGameAreas, 150);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+================================================================================
+                    ESPECIFICACION DE ROLES - LOBO PWA
+================================================================================
+
+FECHA: 20/05/2026
+PROYECTO: Lobo Game - Mecánica de Turnos Nocturnos y Acciones de Roles
+
+================================================================================
+                            MECANICA GENERAL
+================================================================================
+
+PRINCIPIOS BASICOS:
+- Turno único: Cada rol ejecuta su acción solo UNA vez durante toda la partida
+- Botón deshabilitado: Después de actuar, el botón se desactiva permanentemente
+- Estado persistente: Se guarda qué acciones se completaron
+- Datos inmutables: roles_iniciales NUNCA cambia, solo roles_finales
+- Visuales: Cartas se muestran con imágenes desde recursos/personajes/
+
+ESTRUCTURA DE TURNOS NOCTURNOS
+00. se muestra la carta de cada jugador por 10 segundos en el centro sin quitar el fondo
+0.  inicio
+1.  Doble        (selecciona rol a copiar)
+2.  Lobos
+3.  Aprendiz
+4.  Ladrón
+5.  Alborotadora
+6.  Borracho
+7.  Insomnia
+8.  Insomnia Doble (SIEMPRE existe - SOLO SI Doble copió Insomnia podrá hacer una acción)
+9.  Votación
+10. Finalización
+
+IMPORTANTE: Si un rol NO fue añadido en la partida, se SALTA su turno y sus audios.
+Los turnos se calculan dinámicamente según tipos_roles de la partida.
+
+RITMO DE AUDIOS Y RELOJ:
+- Audio 1_inicio → Audio 2_doble → RELOJ 20→0 → Audio 3_doble
+- Audio 4_lobos → RELOJ 20→0 → Audio 5_lobos
+- Audio 6_aprendiz → RELOJ 20→0 → Audio 7_aprendiz
+- (así sucesivamente para cada rol que esté en juego)
+- Si el rol no existe en tipos_roles → se omite el par de audios y el reloj
+================================================================================
+                              ROL: LOBO
+================================================================================
+
+CASO 1: HAY UN SOLO LOBO
+- El lobo presiona botón: mirar_carta
+- Luego selecciona UNA carta del centro
+- Se revela la imagen del rol en ese espacio (5 segundos)
+- Después se oculta automáticamente
+- No puede volver a usar la habilidad
+
+CASO 2: HAY MÚLTIPLES LOBOS (2 o más)
+- NO pueden mirar cartas del centro
+- Se revelan en la sección de jugadores sus nombres
+- Cada lobo verá la imagen del rol "lobo" en otros lobos
+- Solo los lobos pueden verse entre sí
+
+================================================================================
+                          ROL: APRENDIZ DE PITONISA
+================================================================================
+
+ACCIÓN: mirar_carta
+
+PROCEDIMIENTO:
+1. Presiona mirar_carta
+2. Selecciona UNA carta del centro
+3. Ve el rol contenido
+4. Se oculta automáticamente (sin tiempo específico, solo una revelación)
+5. No puede repetir la acción
+
+RESTRICCIONES:
+- No modifica cartas
+- No intercambia roles
+- Solo mira una vez
+
+================================================================================
+                            ROL: LADRÓN
+================================================================================
+
+ACCIÓN: intercambiar_cartas
+
+PROCEDIMIENTO:
+1. Presiona intercambiar_cartas
+2. Selecciona UN jugador (NO a sí mismo)
+3. Se intercambian roles en roles_finales
+4. El ladrón VE su nuevo rol después del intercambio
+5. No puede repetir la acción
+
+RESTRICCIONES:
+- No puede seleccionarse a sí mismo
+- Solo puede intercambiar una vez
+- Valida que el jugador seleccionado sea diferente
+
+================================================================================
+                          ROL: ALBOROTADORA
+================================================================================
+
+ACCIÓN: intercambiar_cartas
+
+PROCEDIMIENTO:
+1. Presiona intercambiar_cartas
+2. Selecciona DOS jugadores DISTINTOS (NO a sí misma)
+3. Los dos jugadores intercambian roles en roles_finales
+4. La alborotadora NO VE las cartas (intercambio oculto)
+5. No puede repetir la acción
+
+RESTRICCIONES:
+- No puede seleccionarse a sí misma
+- Debe seleccionar exactamente 2 jugadores
+- Los 2 jugadores deben ser distintos
+- No ve las cartas (intercambio ciego)
+- Solo puede hacerlo una vez
+
+================================================================================
+                            ROL: BORRACHO
+================================================================================
+
+ACCIÓN: intercambiar_cartas
+
+PROCEDIMIENTO:
+1. Presiona intercambiar_cartas
+2. Selecciona UNA carta del centro
+3. Se intercambian: Borracho ↔ Carta centro
+4. Se actualiza roles_finales del borracho
+5. Se actualiza la carta centro con el rol del borracho
+6. El borracho NO VE su nuevo rol
+7. No puede repetir la acción
+
+RESTRICCIONES:
+- Selecciona 1 carta del centro (no jugador)
+- No ve su nuevo rol
+- No ve qué rol recibió del centro
+- Solo puede hacerlo una vez
+
+================================================================================
+                            ROL: INSOMNIA
+================================================================================
+
+ACCIÓN: Ninguna acción de cambio
+
+PROCEDIMIENTO EN TURNO 7:
+1. No realiza intercambios
+2. Solo VISUALIZA cuál es su rol_final actual
+3. Se muestra la imagen del rol desde recursos/personajes/
+4. Se oculta automáticamente (5-10 segundos)
+5. Puede ver su rol 
+
+RESTRICCIONES:
+- No modifica roles_finales
+- No intercambia nada
+- Solo visualización pasiva
+
+================================================================================
+                            ROL: DOBLE
+================================================================================
+
+TURNO 1 - SELECCIÓN DE ROL:
+1. Presiona botón  copiar_rol para seleccionar rol
+2. Elige UN jugador que no sea el
+3. COPIA ese rol en roles_finales
+4. El doble pasa a tener el rol copiado
+5. realiza la accion inmediatamente del rol que copio
+6. No puede repetir esta acción
+
+DESPUÉS DE COPIAR:
+
+---CASO A: COPIA LOBO---
+- Se convierte en lobo
+- NO puede mirar cartas del centro
+- Sabrá que ahora es lobo
+- NO verá a otros lobos (permanece oculto para ellos)
+- Los otros lobos NO sabrán que el Doble es lobo
+- Es un lobo "secreto/invisible" para los demás
+- Asume todas las reglas de lobo (pero aislado)
+
+---CASO B: COPIA INSOMNIA---
+- En turno 1: NO hace nada en su turno especial
+- En turno 8 (Insomnia Doble):
+  * VISUALIZA su rol_final
+  * Exactamente igual a Insomnia original
+  * Ve la imagen durante 5-10 segundos
+  * Se oculta automáticamente
+
+---CASO C: COPIA OTRO ROL---
+- Asume completamente las reglas del nuevo rol
+- Ejecuta la acción en su turno correspondiente
+- NO hay turno 8 adicional
+- Ejemplo: Si copia Ladrón, actúa en turno 1 
+
+RESTRICCIONES:
+- Solo copia UNA vez
+- Copia completamente (asume todas las reglas del rol copiado)
+- Si copia Insomnia, tiene acceso a turno 8
+- Si no copia Insomnia, turno 8 no se activa para él
+
+================================================================================
+                        RESTRICCIONES CRITICAS
+================================================================================
+
+VALIDACIONES OBLIGATORIAS:
+✓ No puedes actuar 2 veces (botón deshabilitado)
+✓ No puedes seleccionar al mismo jugador/carta 2 veces
+✓ No puedes seleccionarte a ti mismo (excepto Borracho con cartas del centro)
+✓ No puedes superar límite de selecciones (1 o 2 según el rol)
+✓ Validar ANTES de permitir acción
+✓ Sincronizar entre host y clientes
+✓ Ocultar cartas automáticamente tras tiempo (5-10 segundos)
+
+ESTADO DE ACCIONES:
+- Guardar en estructura global: acciones_completadas = { jugador: {...} }
+- Formato: { "Pancho": { lobo_mirar: true, ladron_intercambio: true } }
+- Persistir en localStorage
+- Sincronizar en cada cambio
+
+DATOS INMUTABLES:
+- roles_iniciales: NUNCA cambiar
+- Copiar a roles_finales: SIEMPRE usar roles_finales para modificaciones
+- roles_iniciales: Solo lectura para verificar rol original
+
+VISUALIZACIONES TEMPORALES:
+- Lobo mirando carta: 5 segundos
+- Insomnia viendo rol: 5-10 segundos
+- Doble Insomnia viendo rol: 5-10 segundos
+- Auto-ocultarse: Implementar con setTimeout
+
+SINCRONIZACIÓN MULTIPLAYER:
+- Todos los cambios en roles_finales deben notificarse vía WebSocket
+- Todos los cambios en acciones_completadas deben notificarse
+- Host debe validar acciones antes de aceptarlas
+- Clientes deben recibir estado actualizado
+
+================================================================================
+                          ORDEN DE IMPLEMENTACION
+================================================================================
+
+FASE 1: ESTRUCTURA BASE
+1. Crear estructura acciones_completadas en TABLON_PARTIDA
+2. Crear funciones para guardar/recuperar acciones
+
+FASE 2: LOBO
+1. Validar cantidad de lobos
+2. Si 1 lobo: implementar mirar_carta
+3. Si múltiples: mostrar otros lobos
+
+FASE 3: ROLES SIMPLES
+1. Aprendiz: mirar_carta
+2. Ladrón: intercambiar_cartas (1 jugador)
+3. Alborotadora: intercambiar_cartas (2 jugadores)
+4. Borracho: intercambiar_cartas (1 carta centro)
+
+FASE 4: INSOMNIA Y DOBLE
+1. Insomnia: visualizar rol
+2. Doble: seleccionar rol a copiar
+3. Doble Insomnia: turno 8 especial
+
+FASE 5: SINCRONIZACIÓN
+1. WebSocket: enviar cambios a todos los clientes
+2. Validaciones en host
+3. Confirmación de acciones
+
+================================================================================

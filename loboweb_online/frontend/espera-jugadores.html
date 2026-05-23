@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lobo - Esperando Jugadores">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Esperando Jugadores - Lobo</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="recursos/personajes/lobo.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Fondo: imagen "espera de jugadores.png" */
+        .wait-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wait-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Botón "Iniciar" superpuesto, posicionado por coords capturadas */
+        .start-button {
+            position: fixed;
+            cursor: pointer;
+            z-index: 20;
+            border: 2px dashed rgba(0, 255, 0, 0.5);
+            border-radius: 5px;
+            transition: all 0.2s;
+            background: rgba(0, 255, 0, 0.05);
+        }
+        .start-button:hover:not(.disabled) {
+            background: rgba(0, 255, 0, 0.25);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            border-color: #00ff00;
+        }
+        .start-button.disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            background: rgba(100, 100, 100, 0.15);
+            border-color: rgba(150, 150, 150, 0.4);
+        }
+
+
+        /* Ventana pequeña de jugadores conectados */
+        .players-window {
+            position: fixed;
+            top: 4%;
+            right: 4%;
+            background: linear-gradient(135deg, rgba(20,25,40,0.92), rgba(10,15,25,0.95));
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 12px 14px;
+            min-width: 200px;
+            max-width: 260px;
+            color: #fff;
+            font-size: 0.85em;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 15px rgba(255,215,0,0.2);
+            z-index: 50;
+        }
+        .players-window h3 {
+            color: #ffd700;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,215,0,0.3);
+            padding-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .pw-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78em;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        .pw-info .val { color: #ffd700; font-weight: bold; }
+
+        .player-list {
+            list-style: none;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .player-list li {
+            padding: 5px 8px;
+            margin-bottom: 3px;
+            background: rgba(0,0,0,0.4);
+            border-left: 3px solid #444;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+        .player-list li.host {
+            border-left-color: #ffd700;
+            background: rgba(255,215,0,0.08);
+        }
+        .player-list li .host-tag {
+            background: #ffd700;
+            color: #000;
+            font-size: 0.7em;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        /* Botón volver pequeño esquina */
+        .back-button {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #ff6b6b;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .back-button:hover { background: rgba(0,0,0,0.9); }
+
+        /* Volumen */
+        .volume-control {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+        }
+        .volume-slider {
+            width: 90px; height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            -webkit-appearance: none; appearance: none;
+            cursor: pointer;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 13px; height: 13px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .volume-label { color: white; font-size: 11px; font-weight: bold; }
+
+        audio { display: none; }
+
+
+        /* Estado pequeño */
+        #status {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            color: #ffd700;
+            font-size: 0.85em;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="wait-container">
+        <img src="recursos/espera de jugadores.png" alt="Esperando jugadores" class="wait-image" id="waitImage">
+    </div>
+
+    <!-- Ventana flotante de jugadores conectados -->
+    <div class="players-window">
+        <h3>👥 Jugadores</h3>
+        <div class="pw-info">
+            <span>Conectados: <span class="val" id="playerCount">0</span></span>
+            <span>Código: <span class="val" id="codeLabel">—</span></span>
+        </div>
+        <ul class="player-list" id="playerList"></ul>
+    </div>
+
+
+    <!-- Botón "Iniciar" — posicionado por coords capturadas con captura-guiada.html -->
+    <!-- Sólo el host puede pulsarlo -->
+
+    <button class="back-button" onclick="goBack()">← Volver</button>
+
+    <div class="volume-control">
+        <span class="volume-label">🔊</span>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+
+    <div id="status"></div>
+
+    <audio id="bgMusic" loop>
+        <source src="recursos/recursos de audio/23_musica de fondo.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+        <source src="recursos/recursos de audio/22_clicks.wav" type="audio/wav">
+    </audio>
+
+    <!-- Módulos + coords predeterminadas -->
+    <script src="coords-defaults.js"></script>
+    <script src="telegram.js"></script>
+    <script src="partida.js"></script>
+
+    <script>
+        const audio        = document.getElementById('bgMusic');
+        const volumeSlider = document.getElementById('volumeSlider');
+        audio.volume = 0.7;
+        audio.play().catch(() => {});
+        volumeSlider.addEventListener('input', e => audio.volume = e.target.value / 100);
+
+        function playClickSound() {
+            const s = document.getElementById('clickSound');
+            s.currentTime = 0;
+            s.play().catch(() => {});
+        }
+
+        // ============= TABLÓN =============
+        let tablon = cargarTablon();
+        if (!tablon || !tablon.jugadores || tablon.jugadores.length === 0) {
+            alert('No hay partida activa. Volviendo al lobby.');
+            window.location.href = 'index.html';
+        }
+
+        // Marca este dispositivo como host si no se ha definido (host = jugadores[0])
+        // En multijugador, el cliente que se une no será host.
+        // Aquí asumimos que el dispositivo actual es el del primer jugador (host).
+        const MI_NOMBRE = sessionStorage.getItem('playerName') || '';
+        const SOY_HOST  = MI_NOMBRE !== '' && MI_NOMBRE === tablon.jugadores[0];
+
+        // ============= CÓDIGO DE PARTIDA =============
+        function gameCode() {
+            const host = tablon.jugadores[0] || 'XXXX';
+            let h = 0;
+            for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) >>> 0;
+            const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 4; i++) { code += letras[h % letras.length]; h = Math.floor(h / letras.length); }
+            return code;
+        }
+
+        // ============= RENDER VENTANA DE JUGADORES =============
+        function renderPlayers() {
+            const list = document.getElementById('playerList');
+
+            // Reconciliación: solo agrega/quita diferencias, no limpia la lista completa
+            const enDOM = new Set(
+                Array.from(list.querySelectorAll('li[data-nombre]')).map(li => li.dataset.nombre)
+            );
+            const enTablon = new Set(tablon.jugadores);
+
+            // Quitar los que ya no están
+            enDOM.forEach(nombre => {
+                if (!enTablon.has(nombre)) {
+                    list.querySelector(`li[data-nombre="${CSS.escape(nombre)}"]`)?.remove();
+                }
+            });
+
+            // Agregar los nuevos sin tocar los existentes
+            tablon.jugadores.forEach((nombre, i) => {
+                if (!enDOM.has(nombre)) {
+                    const li = document.createElement('li');
+                    li.dataset.nombre = nombre;
+                    if (i === 0) li.className = 'host';
+                    li.innerHTML = `
+                        <span>${i + 1}. ${nombre}</span>
+                        ${i === 0 ? '<span class="host-tag">HOST</span>' : ''}
+                    `;
+                    list.appendChild(li);
+                }
+            });
+
+            // Actualizar contadores (solo texto — no causa parpadeo)
+            document.getElementById('playerCount').textContent = tablon.jugadores.length;
+            document.getElementById('codeLabel').textContent   = gameCode();
+            updateStartButtonState();
+        }
+
+        // ============= BOTÓN INICIAR (auto-escalado desde coords capturadas) =============
+        const ESPERA_FALLBACK_REF_WIDTH  = 1448;
+        const ESPERA_FALLBACK_REF_HEIGHT = 1086;
+
+        function getDisplayedImageRect(img) {
+            const container = img.getBoundingClientRect();
+            const natW = img.naturalWidth;
+            const natH = img.naturalHeight;
+            if (!natW || !natH) return container;
+            const containerRatio = container.width / container.height;
+            const imageRatio = natW / natH;
+            let dW, dH, oX, oY;
+            if (imageRatio > containerRatio) {
+                dW = container.width; dH = container.width / imageRatio;
+                oX = 0; oY = (container.height - dH) / 2;
+            } else {
+                dH = container.height; dW = container.height * imageRatio;
+                oX = (container.width - dW) / 2; oY = 0;
+            }
+            return { left: container.left + oX, top: container.top + oY, width: dW, height: dH };
+        }
+
+        function loadEsperaCoords() {
+            try {
+                const raw = localStorage.getItem('esperaCoordinates');
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return [];
+        }
+
+
+        function renderStartButton() {
+            // Quitar botón y labels previos
+            document.querySelectorAll('.start-button').forEach(el => el.remove());
+
+            const img = document.getElementById('waitImage');
+            if (!img.naturalWidth) return;
+
+            const coords = loadEsperaCoords();
+            const btnCoord = coords.find(c => c.name === 'boton_iniciar');
+            if (!btnCoord) {
+                console.warn('⚠️ boton_iniciar no capturado. Usa captura-guiada.html escena "Espera"');
+                return;
+            }
+
+            const imgRect = getDisplayedImageRect(img);
+            const capW = btnCoord.captureImageWidth  || img.naturalWidth  || ESPERA_FALLBACK_REF_WIDTH;
+            const capH = btnCoord.captureImageHeight || img.naturalHeight || ESPERA_FALLBACK_REF_HEIGHT;
+            // Si captureImage difiere mucho del natural, preferir natural
+            const useNatural = img.naturalWidth > 0 &&
+                (Math.abs(capW - img.naturalWidth) > 20 || Math.abs(capH - img.naturalHeight) > 20);
+            const refW = useNatural ? img.naturalWidth  : capW;
+            const refH = useNatural ? img.naturalHeight : capH;
+
+            const scaleX = imgRect.width  / refW;
+            const scaleY = imgRect.height / refH;
+
+            const btn = document.createElement('button');
+            btn.className = 'start-button';
+            btn.id = 'startBtn';
+            btn.style.left = (imgRect.left + btnCoord.x * scaleX) + 'px';
+            btn.style.top  = (imgRect.top  + btnCoord.y * scaleY) + 'px';
+            btn.style.width  = (btnCoord.width  * scaleX) + 'px';
+            btn.style.height = (btnCoord.height * scaleY) + 'px';
+            btn.title = 'Iniciar partida';
+            btn.onclick = (e) => { e.stopPropagation(); onStartClicked(); };
+            document.body.appendChild(btn);
+
+
+            updateStartButtonState();
+        }
+
+        function updateStartButtonState() {
+            const btn = document.getElementById('startBtn');
+            if (!btn) return;
+            // Sólo el host puede iniciar, y necesita al menos 1 jugador (= sólo él mismo)
+            const puede = SOY_HOST && tablon.jugadores.length >= 1;
+            btn.classList.toggle('disabled', !puede);
+        }
+
+        // ============= ACCIÓN: INICIAR =============
+        async function onStartClicked() {
+            if (!SOY_HOST) {
+                setStatus('Sólo el host puede iniciar');
+                return;
+            }
+            const btn = document.getElementById('startBtn');
+            if (btn && btn.classList.contains('disabled')) return;
+
+            playClickSound();
+            setStatus('Verificando con Telegram...');
+
+            // ── Verificar contra Telegram que somos el host real y que inicio=0 ──
+            // Previene la condición de carrera cuando varios dispositivos creen ser host
+            try {
+                const remoto = await getTablonFromTelegram();
+                if (remoto) {
+                    if (remoto.inicio === 1) {
+                        setStatus('La partida ya fue iniciada');
+                        setTimeout(() => window.location.href = 'juego.html', 800);
+                        return;
+                    }
+                    if (remoto.jugadores && remoto.jugadores[0] !== MI_NOMBRE) {
+                        setStatus(`❌ El host es "${remoto.jugadores[0]}", no tú`);
+                        updateStartButtonState();
+                        return;
+                    }
+                    // Sincronizar tablón local con el remoto (puede tener más jugadores)
+                    tablon = remoto;
+                    guardar(tablon);
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudo verificar con Telegram, continuando con local:', e);
+            }
+
+            setStatus('Iniciando partida...');
+
+            // Verificar pool suficiente para 4 cartas de centro
+            const poolRestante = Object.values(tablon.roles_jugables || {}).reduce((s, n) => s + n, 0);
+            if (poolRestante < MAX_CARTAS_CENTRO) {
+                alert(`❌ No hay suficientes cartas para el centro.\nNecesarias: ${MAX_CARTAS_CENTRO} — Disponibles: ${poolRestante}`);
+                return;
+            }
+
+            // === Elegir cartas del centro y completar estado de la partida ===
+            completarInicioPartida(tablon);
+            console.log('🎴 Cartas del centro asignadas:', tablon.cartas_centro);
+
+            // === inicio: 0 → 1  +  timestamp sincronizado (todos arrancan a la vez) ===
+            const VENTANA_SYNC_MS = 7000;   // 7 s para que todos los dispositivos detecten el cambio
+            tablon.inicio_ts = Date.now() + VENTANA_SYNC_MS;
+            setInicio(tablon, 1);
+            console.log('🟢 inicio = 1 | arranque en:', new Date(tablon.inicio_ts).toISOString());
+
+            // === Copia el mensaje fijado (mismo tablón, sólo inicio cambia) y lo fija ===
+            try {
+                const msg = buildTablonMessage(tablon);
+                const res = await sendNewPinned(msg);
+                console.log(res.ok ? '✅ Nuevo mensaje fijado con inicio=1' : '⚠️ ' + res.description);
+            } catch (e) { console.error(e); }
+
+            setTimeout(() => window.location.href = 'juego.html', 300);
+        }
+
+        function goBack() {
+            playClickSound();
+            if (confirm('¿Volver a la pantalla de roles?')) {
+                window.location.href = 'crear-partida.html';
+            }
+        }
+
+        function setStatus(msg) {
+            const s = document.getElementById('status');
+            s.textContent = msg;
+            s.style.display = 'block';
+            clearTimeout(setStatus._t);
+            setStatus._t = setTimeout(() => s.style.display = 'none', 2500);
+        }
+
+
+        // ============= INICIAR =============
+        renderPlayers();
+
+        const img = document.getElementById('waitImage');
+        if (img.complete && img.naturalWidth > 0) renderStartButton();
+        else img.addEventListener('load', renderStartButton);
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(renderStartButton, 150);
+        });
+
+        // ============= POLLING: sincronizar tablón desde Telegram =============
+        const POLL_INTERVAL = 2000;
+        let pollTimer = null;
+
+        async function pollTablon() {
+            try {
+                const remote = await getTablonFromTelegram();
+                if (!remote) {
+                            pollTimer = setTimeout(pollTablon, POLL_INTERVAL);
+                    return;
+                }
+
+                // Redirección: siempre que inicio=1, independiente de si algo cambió
+                if (remote.inicio === 1 && !SOY_HOST) {
+                    clearTimeout(pollTimer);
+                    guardar(remote);
+                    setTimeout(() => window.location.href = 'juego.html', 500);
+                    return;
+                }
+
+                const jugadoresCambiaron = JSON.stringify(remote.jugadores) !== JSON.stringify(tablon.jugadores);
+                const inicioCambio       = remote.inicio !== tablon.inicio;
+
+                if (jugadoresCambiaron || inicioCambio) {
+                    tablon = remote;
+                    guardar(tablon);
+                    renderPlayers();
+                }
+            } catch (e) {
+                console.warn('Poll error:', e);
+            }
+            pollTimer = setTimeout(pollTablon, POLL_INTERVAL);
+        }
+
+        pollTablon();
+        window.addEventListener('beforeunload', () => clearTimeout(pollTimer));
+    </script>
+</body>
+</html>
